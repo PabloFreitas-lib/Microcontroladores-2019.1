@@ -314,3 +314,29 @@ ESC_REG(GPIO_PORTF_DEN_R) = 0x08;
         #endif
     }
 }
+
+/*
+ * Questoes teoricas:
+ * ===========================================================================
+ *  1. Qual a vantagem e desvantagem de utilizar o clock na máxima velocidade?
+ *  Resposta:
+ *  Speeding up the bus clock allows for more calculations per second, at the
+ *  cost of more power to operate, generating more heat.
+ *
+ *=============================================================================
+ *  2. Qual a vantagem e desvantagem de utilizar o clock na mínima velocidade?
+ *  Resposta:
+ *  Slowing down the bus clock will require less power to operate and generates less heat.
+ *
+ *=============================================================================
+ *  3. Qual o consumo indicado pelo fabricante do microcontrolador para um clock de 80MHz? E para 1 MHz?
+ *  Resposta:
+ *  Pag 1399:
+ *  For exemple if all the Peripherals are ON in Run MODE and Vdd = 3.3[V] Vdda = 3.3[V] Clock of 80[MHz] 25 [Celcius] have consumption of 45.1 [mA]
+ *                                                                                       Clock of 1 [MHz] 25 [Celcius] have consumption of 10.1 [mA]
+ *================================================================================
+ *  4. Qual a dificuldade de se ajustar um Delay para tempos muito curtos?
+ *  Resposta:
+ *  Some register needed at least 3 pulses of clock to read só some signal will not be readed and will not work as you programmed
+ *
+ */
