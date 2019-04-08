@@ -1,54 +1,10 @@
-/*
- * _________________________________
-
-The execution speed of a microcontroller is determined by an external crystal.
-EK-TM4C123GXL have a 16MHz crystal.
-
-Most microcontrollers include a Phase-Lock-Loop (PLL) that allows software to adjust the excecution speed of the computer.
-
-Slowing down the bus clock will require less power to operate and generates less heat.
-Speeding up the bus clock allows for more calculations per second, at the cost of more power to operate, generating more heat.
-
-The default bus speed for the internal oscillator is 16MHz. The internal oscillator is less precise than the external one,
-but requires less power and does not need an crystal.
-
-If we wish to have accurate control of time, we will activate the external crystal (main oscillator) and use the PLL to select the desired bus speed.
-
-There is an register called OSCSRC (Oscillator Source), where an oscillator is chosen for the clock.
-The clock source will be the Main Oscilator (with the crystal frequency clock) setting the OSCSRC bit to 0.
-
-CLOCK CONFIGURATION
-
-RCC [p. 220]
-The control for the system clock is provided by the Run-Mode Clock Configuration (RCC and RCC2).
-The RCC2 is provided for a larger assortment of clock configuration options.
-
-In the RCC register, there is the XTAL bits, wich defines the Crystal Frequency in MHz.
-[p. 265] Setting XTAL to 10101 (0x15) will make the 400MHz output of the Voltage Controlled Oscillator (VCO) yield in a 16MHz clock in the input of the Phase/Frequency Detector.
- If the clock is too slow, the detector will add to the charge pump, increasing the input to the VCO. If the clock is too fast, the detector will subtract from the charge pump,
- decreasing the input to the VCO.
-
-In the RCC2 register, there is the SYSDIV2 bits [p. 223], with defines a division factor value. It can be set from 4 to 124, making the clock operate in a frequency less than 400MHz.
- For example, if you chose 4, the response will be 400/(4+1) = 80MHz.
-
-Choosing the XTAL changes the precision of the external crystal. Choosing the SYSDIV changes the velocity of the system.
-
-ACCURATE TIME DELAYS USING SYSTICK
-
-The SYSTICK is a value that decreases by 1 every 12.5ns (if the clock is running at 80MHz).
-The RELOAD register is set to the number of bus cycles one wishes to wait.
-CURRENT will clear the counter and will clear the count flag of the CTRL register.
-After SysTick has been decremented 'delay' times, the count flag will be set and the while loop will terminate.
-The maximum time one can wait is about 200ms. To provide longer delays, it is possible to call SysTick_Wait repeatedly.
-
-*/
 
 
 #include <stdint.h>
 
 //#define mili
-//#define micro
-#define delay_SYSTICK
+#define micro
+//#define delay_SYSTICK
 
 #define ESC_REG(x) (*((volatile uint32_t *)(x)))
 
@@ -105,10 +61,12 @@ The maximum time one can wait is about 200ms. To provide longer delays, it is po
 #define config_4MHZ                 0x98C00000 //RCC2 divisao por 50
 #define config_3MHZ                 0x9FC00000 //RCC2 divisao maxima(64) pag 224
 
-const float timer_duvidoso_mili = 10004000;
-const float timer_duvidoso_micro = 10400000000;
-
-
+const float timer_duvidoso_mili_80MHz = 3800000;
+const float timer_duvidoso_micro_80MHz = 3500000;
+const float timer_duvidoso_mili_4MHz = 190000 ; //3800000*(0.05)
+const float timer_duvidoso_micro_4MHz = 175000; // time
+const float timer_duvidoso_mili_20MHz = 950000; // 3800000*(20/80)
+const float timer_duvidoso_micro_20MHz = 875000; //3500000*(20/80)
 
 
 //Defines for precise delay
@@ -167,7 +125,7 @@ void config_Clock(uint32_t config)
     // limpando o conteudo do crystal M e as fontes de clock
     RCC_temp &= ~ (RCC_XTALM | RCC_OSCSRC ); // Used LFIOSC (Low-frequency internal oscillator)
     //RCC_temp |= RCC_PIOSC | RCC_XTAL_16MHZ;
-    RCC_temp |= OSCSRC_PIOSC4 | RCC_XTAL_16MHZ; // Edited to tryout OSCSRC_PIOSC4
+    RCC_temp |= OSCSRC_PIOSC | RCC_XTAL_16MHZ; // Edited to tryout OSCSRC_PIOSC4
     RCC2_temp &= ~(RCC2_USERCC2 | RCC2_OSCSRCM);
     RCC2_temp |= (config & (RCC2_USERCC2)) | RCC_XTAL_16MHZ | RCC_PIOSC;
     // verifica se vai usar o RCC2 Frequencia
@@ -222,7 +180,7 @@ void config_Clock(uint32_t config)
 #ifdef mili
     void delay_system(float mS)
     {
-        mS = (mS/1000) * timer_duvidoso_mili;
+        mS = (mS/1000) * timer_duvidoso_mili_20MHz;
         while(mS > 0)
             mS--;
     }
@@ -231,43 +189,13 @@ void config_Clock(uint32_t config)
 #ifdef micro
     void delay_system(float uS)
     {
-        uS = (uS/1000000)*timer_duvidoso_mili;
+        uS = (uS/1000000)*timer_duvidoso_micro_20MHz;
         while(uS > 0)
             uS--;
     }
 #endif
 
 
-
-    void SysTick_Init(void){
-       ESC_REG(NVIC_ST_CTRL_R) = 0;             // disable SysTick during setup
-       ESC_REG(NVIC_ST_CTRL_R) = 0x5;           // enable SysTick with System Clock (101)
-    }
-
-    // the delay parameter is in units of the 80MHz core clock (12.5ns)
-    void SysTick_Wait(unsigned long delay){
-       ESC_REG(NVIC_ST_RELOAD_R) = delay-1;                 // number of counts to wait
-       ESC_REG(NVIC_ST_CURRENT_R) = 0;                      // any value written to CURRENT is cleared
-       while(~(ESC_REG(NVIC_ST_CTRL_R))&0x00010000){}       // wait for count flag
-    }
-
-    void SysTick_Wait10ms(unsigned long delay){
-       unsigned long i;
-       for(i=0;i<delay;i++){
-           SysTick_Wait(800000);   // wait 10ms (800000*12.5ns = 10ms)
-       }
-    }
-
-
-#ifdef delay_SYSTICK
-
-    void Delay_ms(unsigned long time, unsigned int frequency){
-            if(time>10){
-                Delay_ms(time/10,frequency);
-            }
-            SysTick_Wait(time*frequency);
-        }
-#endif
 
 
 int main(void)
@@ -283,9 +211,6 @@ ESC_REG(GPIO_PORTF_DIR_R) = 0x08;
 ESC_REG(GPIO_PORTF_DEN_R) = 0x08;
 // Loop principal
 
-    #ifdef delay_SYSTICK
-        SysTick_Init();
-    #endif
     while(1)
     {
         // Acende o LED
@@ -294,11 +219,11 @@ ESC_REG(GPIO_PORTF_DEN_R) = 0x08;
         // Atraso
         //for(ui32Loop = 0; ui32Loop < 2000000; ui32Loop++){}
         #ifdef mili
-        delay_system(200); //  2*5500000 ~ 1segundo em microsegundos como parametro
+                delay_system(500); //  2*5500000 ~ 1segundo em microsegundos como parametro
         #endif
 
-        #ifdef delay_SYSTICK
-                Delay_ms(200,80e6);
+        #ifdef micro
+               delay_system(500000); //  2*5500000 ~ 1segundo em microsegundos como parametro
         #endif
         // Apaga o LED
         ESC_REG(GPIO_PORTF_DATA_R) &= ~(0x08);
@@ -306,13 +231,15 @@ ESC_REG(GPIO_PORTF_DEN_R) = 0x08;
         // Atraso
                 //for(ui32Loop = 0; ui32Loop < 2000000; ui32Loop++){}
         #ifdef mili
-               delay_system(200); //  2*5500000 ~ 1segundo em microsegundos como parametro
+               delay_system(500); //  2*5500000 ~ 1segundo em microsegundos como parametro
         #endif
 
-        #ifdef delay_SYSTICK
-                Delay_ms(200,80e6);
+        #ifdef micro
+               delay_system(500000); //  2*5500000 ~ 1segundo em microsegundos como parametro
         #endif
-    }
+
+
+      }
 }
 
 /*
@@ -340,3 +267,50 @@ ESC_REG(GPIO_PORTF_DEN_R) = 0x08;
  *  Some register needed at least 3 pulses of clock to read só some signal will not be readed and will not work as you programmed
  *
  */
+
+
+/*
+ * _________________________________
+
+The execution speed of a microcontroller is determined by an external crystal.
+EK-TM4C123GXL have a 16MHz crystal.
+
+Most microcontrollers include a Phase-Lock-Loop (PLL) that allows software to adjust the excecution speed of the computer.
+
+Slowing down the bus clock will require less power to operate and generates less heat.
+Speeding up the bus clock allows for more calculations per second, at the cost of more power to operate, generating more heat.
+
+The default bus speed for the internal oscillator is 16MHz. The internal oscillator is less precise than the external one,
+but requires less power and does not need an crystal.
+
+If we wish to have accurate control of time, we will activate the external crystal (main oscillator) and use the PLL to select the desired bus speed.
+
+There is an register called OSCSRC (Oscillator Source), where an oscillator is chosen for the clock.
+The clock source will be the Main Oscilator (with the crystal frequency clock) setting the OSCSRC bit to 0.
+
+CLOCK CONFIGURATION
+
+RCC [p. 220]
+The control for the system clock is provided by the Run-Mode Clock Configuration (RCC and RCC2).
+The RCC2 is provided for a larger assortment of clock configuration options.
+
+In the RCC register, there is the XTAL bits, wich defines the Crystal Frequency in MHz.
+[p. 265] Setting XTAL to 10101 (0x15) will make the 400MHz output of the Voltage Controlled Oscillator (VCO) yield in a 16MHz clock in the input of the Phase/Frequency Detector.
+ If the clock is too slow, the detector will add to the charge pump, increasing the input to the VCO. If the clock is too fast, the detector will subtract from the charge pump,
+ decreasing the input to the VCO.
+
+In the RCC2 register, there is the SYSDIV2 bits [p. 223], with defines a division factor value. It can be set from 4 to 124, making the clock operate in a frequency less than 400MHz.
+ For example, if you chose 4, the response will be 400/(4+1) = 80MHz.
+
+Choosing the XTAL changes the precision of the external crystal. Choosing the SYSDIV changes the velocity of the system.
+
+ACCURATE TIME DELAYS USING SYSTICK
+
+The SYSTICK is a value that decreases by 1 every 12.5ns (if the clock is running at 80MHz).
+The RELOAD register is set to the number of bus cycles one wishes to wait.
+CURRENT will clear the counter and will clear the count flag of the CTRL register.
+After SysTick has been decremented 'delay' times, the count flag will be set and the while loop will terminate.
+The maximum time one can wait is about 200ms. To provide longer delays, it is possible to call SysTick_Wait repeatedly.
+
+*/
+
