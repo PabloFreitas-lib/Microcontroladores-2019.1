@@ -1,5 +1,3 @@
-
-
 #include <stdint.h>
 
 //#define mili
@@ -67,19 +65,13 @@ const float timer_duvidoso_mili_4MHz = 190000 ; //3800000*(0.05)
 const float timer_duvidoso_micro_4MHz = 175000; // time
 const float timer_duvidoso_mili_20MHz = 950000; // 3800000*(20/80)
 const float timer_duvidoso_micro_20MHz = 875000; //3500000*(20/80)
+const float timer_duvidoso_mili_50MHz = 2375000; // 3800000*(50/80)
+const float timer_duvidoso_micro_50MHz = 2187500; //3500000*(50/80)
 
-
-//Defines for precise delay
-
-#define NVIC_ST_CTRL_R      0xE000E010  // SysTick Control and Status Register [p. 138]
-#define NVIC_ST_RELOAD_R    0xE000E014  // SysTick Reload Value Register [p. 140]
-#define NVIC_ST_CURRENT_R   0xE000E018  // SysTick Current Value Register [p. 141]
-#define NVIC_ST_CTRL_COUNT  0x00010000  // Count Flag
-
-#define OSCSRC_MOSC         0x0         // main oscillator
-#define OSCSRC_PIOSC        0x1         // precision internal oscillator (default)
-#define OSCSRC_PIOSC4       0x2         // PIOSC/4
-#define OSCSRC_LFIOSC       0x3         // low-frequency internal oscillator
+#define OSCSRC_MOSC                 0x0         // main oscillator
+#define OSCSRC_PIOSC                0x1         // precision internal oscillator (default)
+#define OSCSRC_PIOSC4               0x2         // PIOSC/4
+#define OSCSRC_LFIOSC               0x3         // low-frequency internal oscillator
 
 /*
  * 219 - Clock Control( todos os tipos de clock)
@@ -180,7 +172,8 @@ void config_Clock(uint32_t config)
 #ifdef mili
     void delay_system(float mS)
     {
-        mS = (mS/1000) * timer_duvidoso_mili_20MHz;
+
+        mS = (mS/1000) * timer_duvidoso_mili_4MHz;
         while(mS > 0)
             mS--;
     }
@@ -189,19 +182,17 @@ void config_Clock(uint32_t config)
 #ifdef micro
     void delay_system(float uS)
     {
-        uS = (uS/1000000)*timer_duvidoso_micro_20MHz;
+        uS = (uS/1000000)*timer_duvidoso_micro_4MHz;
         while(uS > 0)
             uS--;
     }
 #endif
 
-
-
-
 int main(void)
 {
+
 volatile uint32_t ui32Loop;
-config_Clock(config_20MHZ);
+config_Clock(config_4MHZ);
 // Habilita o portal de GPIO F
 ESC_REG(SYSCTL_RCGC2_R) = SYSCTL_RCGC2_GPIOF;
 // Faz leitura dummy para efeito de atraso
@@ -218,24 +209,16 @@ ESC_REG(GPIO_PORTF_DEN_R) = 0x08;
 
         // Atraso
         //for(ui32Loop = 0; ui32Loop < 2000000; ui32Loop++){}
-        #ifdef mili
-                delay_system(500); //  2*5500000 ~ 1segundo em microsegundos como parametro
-        #endif
-
         #ifdef micro
-               delay_system(500000); //  2*5500000 ~ 1segundo em microsegundos como parametro
+               delay_system(1000000); //  2*5500000 ~ 1segundo em microsegundos como parametro
         #endif
         // Apaga o LED
-        ESC_REG(GPIO_PORTF_DATA_R) &= ~(0x08);
 
+        ESC_REG(GPIO_PORTF_DATA_R) &= ~(0x08);
         // Atraso
                 //for(ui32Loop = 0; ui32Loop < 2000000; ui32Loop++){}
-        #ifdef mili
-               delay_system(500); //  2*5500000 ~ 1segundo em microsegundos como parametro
-        #endif
-
         #ifdef micro
-               delay_system(500000); //  2*5500000 ~ 1segundo em microsegundos como parametro
+               delay_system(3000000); //  2*5500000 ~ 1segundo em microsegundos como parametro
         #endif
 
 
