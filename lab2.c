@@ -182,7 +182,7 @@ void config_Clock(uint32_t config)
 #ifdef micro
     void delay_system(float uS)
     {
-        uS = (uS/1000000)*timer_duvidoso_micro_4MHz;
+        uS = (uS/1000000)*timer_duvidoso_micro_80MHz;
         while(uS > 0)
             uS--;
     }
@@ -192,7 +192,7 @@ int main(void)
 {
 
 volatile uint32_t ui32Loop;
-config_Clock(config_4MHZ);
+config_Clock(config_80MHZ);
 // Habilita o portal de GPIO F
 ESC_REG(SYSCTL_RCGC2_R) = SYSCTL_RCGC2_GPIOF;
 // Faz leitura dummy para efeito de atraso
@@ -210,7 +210,7 @@ ESC_REG(GPIO_PORTF_DEN_R) = 0x08;
         // Atraso
         //for(ui32Loop = 0; ui32Loop < 2000000; ui32Loop++){}
         #ifdef micro
-               delay_system(1000000); //  2*5500000 ~ 1segundo em microsegundos como parametro
+               delay_system(4000000); //  2*5500000 ~ 1segundo em microsegundos como parametro
         #endif
         // Apaga o LED
 
@@ -218,7 +218,7 @@ ESC_REG(GPIO_PORTF_DEN_R) = 0x08;
         // Atraso
                 //for(ui32Loop = 0; ui32Loop < 2000000; ui32Loop++){}
         #ifdef micro
-               delay_system(3000000); //  2*5500000 ~ 1segundo em microsegundos como parametro
+               delay_system(2000000); //  2*5500000 ~ 1segundo em microsegundos como parametro
         #endif
 
 
