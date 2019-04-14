@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 //#define question2
 //#define question3
@@ -61,7 +62,8 @@
 //poderia ter passado em decimal
 unsigned int vector_numbers[17]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,
                          0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03};
-unsigned int vector_digits[3]={0xC4,0xC8,0x4C,0x8C};
+unsigned int vector_digits[3]={0xC8,0x4C,0x8C,0xC4};
+//                  Display    1d    2d   3d   4d
 const float timer_duvidoso_mili_80MHz = 3800000;
 
 void delay_system(float mS)
@@ -92,7 +94,7 @@ void configuraPino_entrada(uint32_t portal, uint8_t pino)
     ESC_REG(portal+GPIO_O_DEN)|=pino;
 }
 
-uint32_t GPIO_Leitura(uint32_t portal, uint8_t pino)
+uint32_t GPIO_leitura(uint32_t portal, uint8_t pino)
 {
     return (ESC_REG(portal + (GPIO_O_DATA+(pino<<2))));
 }
@@ -114,6 +116,49 @@ void digito(int i)
     GPIO_escrita(portalB_base, pino6|pino7, vector_digits[i]);
     GPIO_escrita(portalD_base, pino3|pino2, vector_digits[i]);
 }
+
+void numero_digitado(char *a)
+{
+int tam = strlen(a);
+    if(tam == 1)
+    {
+        digito(3);numero(0);digito(2);numero(0);digito(1);numero(0);digito(0);numero(a[0]-48);
+
+    }else if(tam == 2)
+    {
+        digito(3);numero(0);digito(2);numero(0);digito(1);numero(a[0]-48);digito(0);numero(a[1]-48);
+
+    }else if(tam == 3)
+    {
+        digito(3);numero(0);digito(2);numero(a[0]-48);digito(1);numero(a[1]-48);digito(0);numero(a[2]-48);
+    }else if(tam == 4)
+    {
+        digito(3);numero(a[0]-48);digito(2);numero(a[1]-48);digito(1);numero(a[2]-48);digito(0);numero(a[3]-48);
+    }
+}
+
+// somente le numeros de 1 - 9
+int * le_display(void)
+{
+int num[4],n;
+
+    for(d=0;d<4;d++)
+    {
+        for(n =0;n<10;n++)
+        {
+            if(GPIO_leitura(portalB_base,pino6|pino7)!=vector_digits[d] && GPIO_leitura(portalD_base,pino3|pino2)!=vector_digits[d])
+            {
+                if((GPIO_leitura(portalE_base,pino0|pino1|pino2|pino3)!=vector_numbers[n]) &&  (GPIO_leitura(portalC_base,pino4|pino5|pino6|pino7)!=vector_numbers[n]))
+                {
+                   num[d] = i;
+                }
+            }
+        }
+    }
+    return(num);
+}
+
+
 int main(void)
  {
     volatile uint32_t ui32Loop;
@@ -131,7 +176,9 @@ int main(void)
     configuraPino_saida(portalB_base, pino6|pino7);
     configuraPino_saida(portalD_base, pino2|pino3);
 
-
+    //configura pino botao sw1
+    configuraPino_entrada(portalF_base,pino4);
+    ESC_REG(portalF_base+GPIO_O_PUR)|= pino4;
 
 
 
@@ -146,12 +193,30 @@ int main(void)
      int n;
      // comeca tudo com 0
      digito(0);numero(0);digito(1);numero(0);digito(2);numero(0);digito(3);numero(0);
+     delay_system(1000);
+
          for( n= 0;n < 13;n++)
          {
              digito(0);numero(n);digito(1);numero(n+1);digito(2);numero(n+2);digito(3);numero(n+3);
              delay_system(1000);
          }
     #endif
+
+    #ifdef question4
+    char num[5] = "9999"
+            // comeca tudo com 0
+            digito(0);numero(0);digito(1);numero(0);digito(2);numero(0);digito(3);numero(0);
+            delay_system(1000);
+
+            numero_digitado(num);
+            delay_system(1000);
+    #endif
+
+    #ifdef question5
+            int num[5] = le_display();
+    #endif
     }
 
 }
+
+
