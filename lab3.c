@@ -157,7 +157,48 @@ int num[4],n;
     }
     return(num);
 }
+void incrementa_display(int * a)
+{
 
+ if(a[0]==9 && a[1]==9 && a[2]==9 && a[3]==9)
+ {
+     digito(0);numero(0);digito(1);numero(0);digito(2);numero(0);digito(3);numero(0);
+     delay_system(1000);
+ }
+
+ if(a[3]==9){
+     a[3]=0;
+ }else{
+     // quarto digito acrescido
+     digito(0);numero(a[0]);digito(1);numero(a[1]);digito(2);numero(a[2]);digito(3);numero(a[3]++);
+     delay_system(1000);
+ }
+ if(a[2]==9){
+      a[2]=0;
+  }else{
+    //terceiro digito acrescido
+    digito(0);numero(a[0]);digito(1);numero(a[1]);digito(2);numero(a[2]++);digito(3);numero(a[3]);
+    delay_system(1000);
+}
+ if(a[1]==9){
+       a[1]=0;
+ }else{
+     //segundo digito acrescido
+     digito(0);numero(a[0]);digito(1);numero(a[1]++);digito(2);numero(a[2]);digito(3);numero(a[3]);
+     delay_system(1000);
+ }
+ if(a[0]==9){
+     a[0]=0;
+ }
+ else{
+     //primeiro digito acrescido
+     digito(0);numero(a[0]++);digito(1);numero(a[1]);digito(2);numero(a[2]);digito(3);numero(a[3]);
+     delay_system(1000);
+ }
+
+
+
+}
 
 int main(void)
  {
