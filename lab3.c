@@ -66,12 +66,6 @@ void habilita_clockGPIO(uint32_t portalGPIO)
     //nao jogar fora o conteudo anterior
 }
 
-void habilita_AHB(uint32_t portalGPIO)
-{
-    ESC_REG(GPIOHBCTL)|=portalGPIO;
-    //nao jogar fora o conteudo anterior
-}
-
 void configuraPino_saida(uint32_t portal, uint8_t pino)
 {
     ESC_REG(portal+GPIO_O_DIR)|=pino;
@@ -96,18 +90,7 @@ void GPIO_escrita(uint32_t portal, uint8_t pino, uint8_t valor)
     ESC_REG(portal + (GPIO_O_DATA+(pino<<2)))=valor;
 }
 
-// unlock GPIOLOCK register using direct register programming
 
-void unlock_GPIO(uint32_t portal)
-{
-       ESC_REG(portal + GPIO_O_LOCK) = GPIO_LOCK_KEY;
-       ESC_REG(portal + GPIO_O_CR) = 0x01;
-}
-
-void lock_GPIO(uint32_t portal)
-{
-    ESC_REG(portal + GPIO_O_LOCK) = 0;
-}
 
 void numero(int i)
 {
