@@ -56,7 +56,9 @@
 #define GPIO_O_CR                   0x524
 #define GPIO_LOCK_KEY               0x4C4F434B
 //poderia ter passado em decimal
-
+unsigned int vector_numbers[17]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,
+                         0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03};
+unsigned int vector_digits[3]={0xC4,0xC8,0x4C,0x8C};
 
 void habilita_clockGPIO(uint32_t portalGPIO)
 {
@@ -106,36 +108,37 @@ void lock_GPIO(uint32_t portal)
 {
     ESC_REG(portal + GPIO_O_LOCK) = 0;
 }
+
+void numero(int i)
+{
+    GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, vector_numbers[i]);
+    GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, vector_numbers[i]);
+}
+void digito(int i)
+{
+    GPIO_escrita(portalB_base, pino6|pino7, vector_digits[i]);
+    GPIO_escrita(portalD_base, pino3|pino2, vector_digits[i]);
+}
 int main(void)
  {
     volatile uint32_t ui32Loop;
 
-    // Habilita o portal de GPIO F
+
     habilita_clockGPIO(portalGPIO_e|portalGPIO_c|portalGPIO_d | portalGPIO_b);
-    //habilita_AHB(portalGPIO_f);
+
 
     //funcao que pasa quanquer portal, escrevo o bit dentro deste reg
     // Faz leitura dummy para efeito de atraso
     ui32Loop = ESC_REG(SYSCTL_RCGC2_R);
 
-    // Habilita o pino 3 do portal F, configura como saída digital
     configuraPino_saida(portalC_base,pino4|pino5|pino6|pino7);
     configuraPino_saida(portalE_base,pino0|pino1|pino2|pino3);
     configuraPino_saida(portalB_base, pino6|pino7);
     configuraPino_saida(portalD_base, pino2|pino3);
 
 
-    // Habilita o pino 4 do portal, configura como entrada com weak pull up
-    //configuraPino_entrada(portalF_base_AHB,pino4); // SW1
-    //ESC_REG(portalF_base_AHB+GPIO_O_PUR)|= pino4;
 
-    //unlock_GPIO(portalF_base_AHB);
 
-    // Habilita o pino 0 do portal, configura como entrada com weak pull up
-    //configuraPino_entrada(portalF_base_AHB,pino0); // SW2
-    //ESC_REG(portalF_base_AHB+GPIO_O_PUR)|= pino0;
-
-    //lock_GPIO(portalF_base_AHB);
 
     // Loop principal
     while(1)
@@ -143,9 +146,8 @@ int main(void)
 
         // Atraso
         for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
-        GPIO_escrita(portalB_base, pino6|pino7, (pino6|pino7));
-        GPIO_escrita(portalD_base, pino3|pino2, ~(pino3)|pino2);
-        GPIO_escrita(portalE_base, pino1|pino2, (pino1|pino2));
+        digito(0);
+        numero(0);
     }
 
 }
