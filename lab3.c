@@ -1,5 +1,8 @@
 #include <stdint.h>
 
+//#define question2
+//#define question3
+//#define question4
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
 
 #define REAL
@@ -59,6 +62,15 @@
 unsigned int vector_numbers[17]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,
                          0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03};
 unsigned int vector_digits[3]={0xC4,0xC8,0x4C,0x8C};
+const float timer_duvidoso_mili_80MHz = 3800000;
+
+void delay_system(float mS)
+{
+
+   mS = (mS/1000) * timer_duvidoso_mili_80MHz;
+   while(mS > 0)
+   mS--;
+}
 
 void habilita_clockGPIO(uint32_t portalGPIO)
 {
@@ -129,8 +141,17 @@ int main(void)
 
         // Atraso
         for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
-        digito(0);
-        numero(0);
+
+    #ifdef question2
+     int n;
+     // comeca tudo com 0
+     digito(0);numero(0);digito(1);numero(0);digito(2);numero(0);digito(3);numero(0);
+         for( n= 0;n < 13;n++)
+         {
+             digito(0);numero(n);digito(1);numero(n+1);digito(2);numero(n+2);digito(3);numero(n+3);
+             delay_system(1000);
+         }
+    #endif
     }
 
 }
