@@ -140,7 +140,7 @@ int tam = strlen(a);
 // somente le numeros de 1 - 9
 int * le_display(void)
 {
-int num[4],n;
+int num[4],n,d;
 
     for(d=0;d<4;d++)
     {
@@ -150,7 +150,7 @@ int num[4],n;
             {
                 if((GPIO_leitura(portalE_base,pino0|pino1|pino2|pino3)!=vector_numbers[n]) &&  (GPIO_leitura(portalC_base,pino4|pino5|pino6|pino7)!=vector_numbers[n]))
                 {
-                   num[d] = i;
+                   num[d] = n;
                 }
             }
         }
@@ -255,6 +255,7 @@ int main(void)
 
     #ifdef question5
             int num[5] = le_display();
+            incrementa_display(num);
     #endif
     }
 
