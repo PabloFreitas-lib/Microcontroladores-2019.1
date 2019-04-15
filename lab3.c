@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
-//#define question2
+#define question2
 //#define question3
 //#define question4
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
@@ -61,8 +61,8 @@
 #define GPIO_LOCK_KEY               0x4C4F434B
 //poderia ter passado em decimal
 unsigned int vector_numbers[17]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,
-                         0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03};
-unsigned int vector_digits[3]={0xC8,0x4C,0x8C,0xC4};
+                         0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03,0x00};
+unsigned int vector_digits[4]={0x8C,0x4C,0xC8,0xC4};
 //                  Display    1d    2d   3d   4d
 const float timer_duvidoso_mili_80MHz = 3800000;
 
@@ -205,7 +205,7 @@ int main(void)
     volatile uint32_t ui32Loop;
 
 
-    habilita_clockGPIO(portalGPIO_e|portalGPIO_c|portalGPIO_d | portalGPIO_b);
+    habilita_clockGPIO(portalGPIO_e|portalGPIO_c|portalGPIO_d | portalGPIO_b| portalGPIO_f);
 
 
     //funcao que pasa quanquer portal, escrevo o bit dentro deste reg
@@ -228,22 +228,39 @@ int main(void)
     {
 
         // Atraso
-        for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
+    for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
 
-    #ifdef question2
-     int n;
-     // comeca tudo com 0
-     digito(0);numero(0);digito(1);numero(0);digito(2);numero(0);digito(3);numero(0);
-     delay_system(1000);
+        #ifdef question2
+        int n1,n2,n3,n4;
+        float mS = 1000;
 
-         for( n= 0;n < 13;n++)
-         {
-             digito(0);numero(n);digito(1);numero(n+1);digito(2);numero(n+2);digito(3);numero(n+3);
-             delay_system(1000);
-         }
-    #endif
+        for(n2=0;n2 < 16;n2++){
+            for( n1= 0;n1 < 16;n1++)
+            {
+                //delay_system(100);
 
-    #ifdef question4
+                mS = (ms/1000) * timer_duvidoso_mili_80MHz;
+                // Esse while equivale a 1000 ms de delay enquanto os dois digitos estão no display ao "mesmo tempo" , mas na verdade eles tao simutaneamente ligando e desligando no ponto que o olho humano nao percebe
+                while(mS > 0)
+                {
+                    mS--;
+                    digito(3);
+                    numero(n1);
+                    delay_system(10);
+                    digito(2);
+                    numero(n2);
+                }
+
+            }
+        }
+         #endif
+    }
+
+}
+
+
+
+#ifdef question4
     char num[5] = "9999"
             // comeca tudo com 0
             digito(0);numero(0);digito(1);numero(0);digito(2);numero(0);digito(3);numero(0);
@@ -257,8 +274,4 @@ int main(void)
             int num[5] = le_display();
             incrementa_display(num);
     #endif
-    }
-
-}
-
 
