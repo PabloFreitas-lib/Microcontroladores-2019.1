@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
-//#define question2
+#define question2
 //#define question3
 //#define question4
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
@@ -62,12 +62,11 @@
 //poderia ter passado em decimal
 
 
-unsigned int vector_numbers[17]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,
-                         0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03,0x00};
+unsigned int vector_numbers[17]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03,0x00};
 unsigned int vector_digits[4]={0x8C,0x4C,0xC8,0xC4};
 //                  Display    1d    2d   3d   4d
 const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
-const float timer_doopler = 10;
+const float timer_doopler = 1;
 
 void delay_system(float mS)
 {
@@ -120,156 +119,20 @@ void digito(int i)
     GPIO_escrita(portalD_base, pino3|pino2, vector_digits[i]);
 }
 
-void numero_digitado(char *a)
+
+void limpa_diplay(void)
 {
-int tam = strlen(a);
-        int mS;
-                        // comeca tudo com 0
-                        mS = timer_duvidoso_mili_80MHz;
-
-    if(tam == 1)
-    {
-      while(mS > 0)
-      {
-                      mS--;
-                      digito(0);
-                      numero(0);
-                      delay_system(timer_doopler);
-                      digito(1);
-                      numero(0);
-                      delay_system(timer_doopler);
-                      digito(2);
-                      numero(0);
-                      delay_system(timer_doopler);
-                      digito(3);
-                      numero(a[0]-48);
-                      delay_system(timer_doopler);
-      }
-
-    }else if(tam == 2)
-    {
-        while(mS > 0)
-        {
-                      mS--;
-                      digito(0);
-                      numero(0);
-                      delay_system(timer_doopler);
-                      digito(1);
-                      numero(0);
-                      delay_system(timer_doopler);
-                      digito(2);
-                      numero(a[0]-48);
-                      delay_system(timer_doopler);
-                      digito(3);
-                      numero(a[1]-48);
-                      delay_system(timer_doopler);
-        }
-
-    }else if(tam == 3)
-    {
-        while(mS > 0)
-                {
-                      mS--;
-                      digito(0);
-                      numero(0);
-                      delay_system(timer_doopler);
-                      digito(1);
-                      numero(a[0]-48);
-                      delay_system(timer_doopler);
-                      digito(2);
-                      numero(a[1]-48);
-                      delay_system(timer_doopler);
-                      digito(3);
-                      numero(a[2]-48);
-                      delay_system(timer_doopler);
-                }
-    }else if(tam == 4)
-    {
-        while(mS > 0)
-                {
-                      mS--;
-                      digito(0);
-                      numero(a[0]-48);
-                      delay_system(timer_doopler);
-                      digito(1);
-                      numero(a[1]-48);
-                      delay_system(timer_doopler);
-                      digito(2);
-                      numero(a[2]-48);
-                      delay_system(timer_doopler);
-                      digito(3);
-                      numero(a[3]-48);
-                      delay_system(timer_doopler);
-                }
-    }
-}
-
-// somente le numeros de 1 - 9
-int * le_display(void)
-{
-int num[4],n,d;
-
-    for(d=0;d<4;d++)
-    {
-        for(n =0;n<10;n++)
-        {
-            if(GPIO_leitura(portalB_base,pino6|pino7)!=vector_digits[d] && GPIO_leitura(portalD_base,pino3|pino2)!=vector_digits[d])
-            {
-                if((GPIO_leitura(portalE_base,pino0|pino1|pino2|pino3)!=vector_numbers[n]) &&  (GPIO_leitura(portalC_base,pino4|pino5|pino6|pino7)!=vector_numbers[n]))
-                {
-                   num[d] = n;
-                }
-            }
-        }
-    }
-    return(num);
-}
-void incrementa_display(int * a)
-{
-
- if(a[0]==9 && a[1]==9 && a[2]==9 && a[3]==9)
- {
-     digito(0);numero(0);digito(1);numero(0);digito(2);numero(0);digito(3);numero(0);
-     delay_system(1000);
- }
-
- if(a[3]==9){
-     a[3]=0;
- }else{
-     // quarto digito acrescido
-     digito(0);numero(a[0]);digito(1);numero(a[1]);digito(2);numero(a[2]);digito(3);numero(a[3]++);
-     delay_system(1000);
- }
- if(a[2]==9){
-      a[2]=0;
-  }else{
-    //terceiro digito acrescido
-    digito(0);numero(a[0]);digito(1);numero(a[1]);digito(2);numero(a[2]++);digito(3);numero(a[3]);
-    delay_system(1000);
-}
- if(a[1]==9){
-       a[1]=0;
- }else{
-     //segundo digito acrescido
-     digito(0);numero(a[0]);digito(1);numero(a[1]++);digito(2);numero(a[2]);digito(3);numero(a[3]);
-     delay_system(1000);
- }
- if(a[0]==9){
-     a[0]=0;
- }
- else{
-     //primeiro digito acrescido
-     digito(0);numero(a[0]++);digito(1);numero(a[1]);digito(2);numero(a[2]);digito(3);numero(a[3]);
-     delay_system(1000);
- }
-
-
-
+    GPIO_escrita(portalB_base, pino6|pino7, 0x00|0x00);
+    GPIO_escrita(portalD_base, pino3|pino2, 0x00|0x00);
+    GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, 0x00|0x00|0x00|0x00);
+    GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, 0x00|0x00|0x00|0x00);
 }
 
 int main(void)
  {
     volatile uint32_t ui32Loop;
+    int n1,n2,n3,n4,mS;
+
 
 
     habilita_clockGPIO(portalGPIO_e|portalGPIO_c|portalGPIO_d | portalGPIO_b| portalGPIO_f);
@@ -296,65 +159,32 @@ int main(void)
 
         // Atraso
     for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
-
-
-    }
-
-}
-        #ifdef question2
-            int n1,n2,n3,n4,mS;
-            for(n2=0;n2 < 16;n2++){
-                for( n1= 0;n1 < 16;n1++)
-                {
-                    //delay_system(100);
-
-                    mS = timer_duvidoso_mili_80MHz; //~ um segundo
+            int n1,n2,i=1000;
+            mS = 1000; //~ um segundo
+            for(n2=0;n2< 16;n2++)
+            {
+                for(n1=0;n1<16;n1++){
                     // Esse while equivale a 1000 ms de delay enquanto os dois digitos estão no display ao "mesmo tempo" , mas na verdade eles tao simutaneamente ligando e desligando no ponto que o olho humano nao percebe
                     // display [ - - n2 n2 ]
-                    while(mS > 0)
-                    {
-                        mS--;
+                        for (n3=0; n3<50; n3++)
+                        {
                         digito(3);
                         numero(n1);
                         delay_system(timer_doopler);
+
+                        limpa_diplay();
+                        delay_system(timer_doopler);
+
                         digito(2);
                         numero(n2);
-                    }
+                        delay_system(timer_doopler);
 
-                }
+                        limpa_diplay();
+                        delay_system(timer_doopler);
+                        }
+                 }
+                n1=0;
             }
-         #endif
-
-
-    #ifdef question4
-        int num[5] = "9999"
-                int mS;
-                // comeca tudo com 0
-                mS = timer_duvidoso_mili_80MHz;
-                //Tentativa de inicializar o display [ 0 0 0 0]
-                while(mS > 0)
-                {
-                mS--;
-                digito(3);
-                numero(0);
-                delay_system(timer_doopler);
-                digito(2);
-                numero(0);
-                delay_system(timer_doopler);
-                digito(1);
-                numero(0);
-                delay_system(timer_doopler);
-                digito(0);
-                numero(0);
-                delay_system(timer_doopler);
-                }
-
-                numero_digitado(num);
-                delay_system(1000);
-    #endif
-
-    #ifdef question5
-            int num[5] = le_display();
-            incrementa_display(num);
-    #endif
+      }
+    }
 
