@@ -327,30 +327,16 @@ void cronometro(void){
 int pause = 0;
 int n1=0,n2=0,n3=0,n4=0,j=0;
 
-    while(n4<7) // dezena minuto 0 - 6
+    while(n4<=5) // dezena minuto 0 - 6
     {
-        if(n3==10)
+
+        while(n3<=9) //unidade minuto 0 - 9
         {
-        n4++;
-        n3=0;
-        }
-        while(n3<10) //unidade minuto 0 - 9
-        {
-            if(n2==7)
+            while(n2<=9) //segundo dezena 0 - 6
             {
-                n3++;
-                n2=0;
-            }
-            while(n2<7) //segundo dezena 0 - 6
-            {
-                if(n1==10)
+                while(n1<=9) // segundos unidade 0 - 9
                 {
-                n2++;
-                n1=0;
-                }
-                while(n1<10) // segundos unidade 0 - 9
-                {
-                    for (j=0; j<50; j++)
+                    for (j=0; j<4; j++)
                     {
                         escreve_4_digitos(n4, n3, n2, n1);
 
@@ -371,12 +357,38 @@ int n1=0,n2=0,n3=0,n4=0,j=0;
                             delay_system(15);
                             n1=0;n2=0;n3=0;n4=0;
                         }
+                        #ifdef anodo
+                        if(j%50==0)
+                        {
+                            pontos_intermitentes();
+                            delay_system(timer_doopler);
+
+                            limpa_diplay();
+                            delay_system(timer_doopler);
+                        }
+                        #endif
                     }
                     if(!pause)
                                                 n1++;
                 }
+
+                if(n1==10)
+                                {
+                                n2++;
+                                n1=0;
+                                }
             }
+            if(n2==10)
+                        {
+                            ++n3;
+                            n2=0;
+                        }
         }
+    if(n3==10)
+           {
+           ++n4;
+           n3=0;
+           }
     }
     n1=0,n2=0,n3=0,n4=0;
 }
@@ -448,44 +460,129 @@ int j=0;
 }
 
 #ifdef matrix
-void matrix_botao(void)
+void matrix_botao(int n1,int n2, int n3, int n4)
 {
-    int c=0,l=0,j=0;
-    for(c=0;c<4;c++)
-    {
-        for(l=0;l<4;l++)
-        {
-            GPIO_escrita(portalF_base, pino0|pino1|pino2|pino3, vector_matrix[c]);
+    int c=0,l=0,first=0;
 
-            if(l==0 && GPIO_leitura(portalF_base, pino4)!= pino4)
+    while(1)
+    {
+        if(!first)
+        {
+            for(c=0;c<4;c++)
+                    {
+                        escreve_4_digitos(n1,n2,n3,n4);
+                        for(l=0;l<4;l++)
+                        {
+                            GPIO_escrita(portalF_base, pino0|pino1|pino2|pino3, vector_matrix[c]);
+                            if(l==0 && GPIO_leitura(portalF_base, pino4)!= pino4)
+                            {
+                                n4=c;
+                                first=1;
+                                delay_system(50);
+                            }
+                            if(l==1 && GPIO_leitura(portalB_base, pino0)!= pino0)
+                            {
+                                n4=c+4;
+                                first=1;
+                                delay_system(50);
+                            }
+                            if(l==2 && GPIO_leitura(portalB_base, pino1)!= pino1)
+                            {
+                                n4=c+8;
+                                first=1;
+                                delay_system(50);
+                            }
+                            if(l==3 && GPIO_leitura(portalB_base, pino5)!= pino5)
+                            {
+                                n4=c+12;
+                                first=1;
+                                delay_system(50);
+                            }
+                        }
+                    }
+        }
+        else
+        {
+
+
+            for(c=0;c<4;c++)
             {
-              delay_system(50);
-              for(j=0;j<50;j++)
-              escreve_4_digitos(0, 0, 0, c);
-            }
-            if(l==1 && GPIO_leitura(portalB_base, pino0)!= pino0)
-            {
-                delay_system(50);
-                for(j=0;j<50;j++)
-                escreve_4_digitos(0, 0, 0, c+4);
-            }
-            if(l==2 && GPIO_leitura(portalB_base, pino1)!= pino1)
-            {
-                delay_system(50);
-                for(j=0;j<50;j++)
-                escreve_4_digitos(0, 0, 0, c+8);
-            }
-            if(l==3 && GPIO_leitura(portalB_base, pino5)!= pino5)
-            {
-                delay_system(50);
-                for(j=0;j<50;j++)
-                escreve_4_digitos(0, 0, 0, c+12);
+                escreve_4_digitos(n1,n2,n3,n4);
+                for(l=0;l<4;l++)
+                {
+                    GPIO_escrita(portalF_base, pino0|pino1|pino2|pino3, vector_matrix[c]);
+                    if(l==0 && GPIO_leitura(portalF_base, pino4)!= pino4)
+                    {
+                        n1=n2;n2=n3;n3=n4;
+                        n4=c;
+                        delay_system(50);
+                    }
+                    if(l==1 && GPIO_leitura(portalB_base, pino0)!= pino0)
+                    {
+                        n1=n2;n2=n3;n3=n4;
+                        n4=c+4;
+                        delay_system(50);
+                    }
+                    if(l==2 && GPIO_leitura(portalB_base, pino1)!= pino1)
+                    {
+                        n1=n2;n2=n3;n3=n4;
+                        n4=c+8;
+                        delay_system(50);
+                    }
+                    if(l==3 && GPIO_leitura(portalB_base, pino5)!= pino5)
+                    {
+                        n1=n2;n2=n3;n3=n4;
+                        n4=c+12;
+                        delay_system(50);
+                    }
+                }
             }
         }
     }
 }
 
 #endif
+
+void questao_8(void)
+{
+    int c=0,l=0,n4=0;
+
+        while(1)
+        {
+        for(c=0;c<4;c++)
+        {
+            digito(3);
+            numero(n4);
+            for(l=0;l<4;l++)
+            {
+                GPIO_escrita(portalF_base, pino0|pino1|pino2|pino3, vector_matrix[c]);
+
+
+                if(l==0 && GPIO_leitura(portalF_base, pino4)!= pino4)
+                {
+                  n4=c;
+                  delay_system(50);
+                }
+                if(l==1 && GPIO_leitura(portalB_base, pino0)!= pino0)
+                {
+                    n4=c+4;
+                    delay_system(50);
+                }
+                if(l==2 && GPIO_leitura(portalB_base, pino1)!= pino1)
+                {
+                    n4=c+8;
+                    delay_system(50);
+                }
+                if(l==3 && GPIO_leitura(portalB_base, pino5)!= pino5)
+                {
+                    n4=c+12;
+                    delay_system(50);
+                }
+            }
+        }
+        }
+
+}
 
 
 // ----------------------------------------------------------------- Fim das funcoes----------------------------------------------------------------------
@@ -541,6 +638,6 @@ int main(void)
     {
         // Atraso
     for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
-        matrix_botao();
+        matrix_botao(0,0,0,0);
     }
  }
