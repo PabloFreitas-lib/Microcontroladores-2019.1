@@ -5,8 +5,8 @@
 
 //#define anodo
 #define catodo
-//#define botao_sw2
-#define matrix
+#define botao_sw2
+//#define matrix
 
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
 
@@ -638,6 +638,7 @@ int main(void)
     {
         // Atraso
     for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
-        matrix_botao(0,0,0,0);
+    digito(0);
+        botao();
     }
  }
