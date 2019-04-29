@@ -1,0 +1,19 @@
+1- Cite os dois modelos de arquitetura de microprocessadores e microcontroladores estudadas, inidicando as vantagens e desvantagens de cada uma delas. (2017.1 e 2)
+
+2- Cite duas classificações de conjunto de instrução de microprocessadores e microcontroladoress estudadas, indicando as vantagens e desvantagens de cada uma delas.(2017.1 e 2)
+
+3-Qual a vantagem e desvantagem de utilizar a configuração de corrente de um pino de saída com mínima de 2mA? E com máxima de 8 mA?(2017.1 e 2)
+
+4-Os pinos ligados aos botões precisam ser configurados como pull-up, qual a razão para que não sejam colocados estes resistores externamente na placa? (2017.1 e 2)
+
+5-Qual a desvantagem em utilizar um display de 7 segmentos e 4 dígitos semelhante ao que foi usado na placa para projetos com microcontroladores? (2017.1 e 2)
+
+6-Qual a dificuldade de se ajustar um Delay por instruções dummies para tempos muito curtos?
+
+7-Disserte sobre o efeito da quantidade de instruções dentro da função chamadas de interrupção. (2017.1 e 2)
+
+8-Qual o tempo máximo que o módulo de Timer pode contar? Explique seus cálculos indicando a velocidade de operação da CPU.
+
+9-Qual a diferença entre usar o timer para gerar um delay e usar o Systick? Qual o mais indicado para gerar delays precisos? (2017.1 e 2)
+ E o mais indicado para contagem periódica do tempo?
+
