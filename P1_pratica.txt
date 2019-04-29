@@ -1,0 +1,10 @@
+1- Faça uma aplicacao para converter numeros decimais para hexadecimais e de hexadecimais para decimais, as chaves SW1 e SW2 definem qual das operacoes é executada.
+O display deverão iniciar totalmente apagados e medida que forem entrados os dados estes aparecerao no display de 7 segmentos, caso seja digitado mais de 4 valores
+devera aparecer erro no display, o mesmo aviso devera aparecer se o usuario desejar fazer uma concersao decimal para hexadecimal e tiver digitado um numero hexadecimal
+de entrada.Caso o resultado não possa ser mostrado por mais d e4 digitos vera aparecer o aviso OVER.
+
+2- Faca uma aplicacao para mostrar o padrão mostrado na figura abaixo no display de 7 segmentos, as chaves SW1 e SW2 definem a velocidade e o sentido de rotação do padrão
+. o Display deverão iniciar totalmente apagados e somente ao pressionar o botão referente a elocidade que deverá ser inciado a aplicacao. Devera haver 5 velocidades, cuide
+para que elas sejam distiguiveis entre si  e tambem perceptiveis. Quanto ao sentido d arotação devera ser, horario e anti-horario. Antes de iniciar, faca um texto resumido
+explicando quais modulos que pretende utilizar do microcontrolador e um pouco da logica que utilizará para esta aplicação.
+Fazer para lógica de um tracinho dando a volta no display e de uma bolinha dando a volta no display.
