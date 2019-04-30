@@ -1,5 +1,5 @@
 #include <stdint.h>
-
+#define catodo
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
 
 #define SYSCTL_RCGC2_GPIOF          0x00000020
@@ -43,6 +43,13 @@
 #define portalD_BASE                0x40007000
 #define portalE_BASE                0x40024000
 #define portalF_BASE                0x40025000
+
+#define portalA_base                0x40004000
+#define portalB_base                0x40005000
+#define portalC_base                0x40006000
+#define portalD_base                0x40007000
+#define portalE_base                0x40024000
+#define portalF_base                0x40025000
 
 #define portalGPIO_a                0x01
 #define portalGPIO_b                0x02
@@ -95,8 +102,21 @@
 #define NVIC_ST_CTRL_INTEN          0x2
 #define NVIC_ST_RELOAD              0xE000E014
 
-const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
+#ifdef anodo
 
+unsigned int vector_numbers[17]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03};
+unsigned int vector_digits[4]={0x8C,0x4C,0xC8,0xC4}; // sinal baixo funciona
+int um_minuto_anodo = 3000;
+#endif
+
+#ifdef catodo
+unsigned int vector_numbers[17]={0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0x88,0x83,0xC6,0xA1,0x86,0x8E,0xFC};
+unsigned int vector_digits[5]={0x40,0x80,0x04,0x08,0xCC}; // sinal alto funciona
+int um_minuto_catodo = 1500;
+#endif
+
+const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
+const float timer_doopler = 0.33;
 
 void habilita_clockGPIO(uint32_t portalGPIO)
 {
@@ -134,6 +154,65 @@ void GPIO_escrita(uint32_t portal, uint8_t pino, uint8_t valor)
 {
     ESC_REG(portal + (GPIO_O_DATA+(pino<<2)))=valor;
 }
+
+
+void numero(int i)
+{
+    GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, vector_numbers[i]);
+    GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, vector_numbers[i]);
+}
+void digito(int i)
+{
+    GPIO_escrita(portalB_base, pino6|pino7, vector_digits[i]);
+    GPIO_escrita(portalD_base, pino3|pino2, vector_digits[i]);
+}
+
+
+#ifdef anodo
+void pontos_intermitentes(void)
+{
+       GPIO_escrita(portalB_base, pino6|pino7, pino6|pino7);
+       GPIO_escrita(portalD_base, pino3|pino2, pino3|pino2);
+       GPIO_escrita(portalD_base, pino6, ~(pino6));
+       GPIO_escrita(portalE_base, pino0|pino1|pino2, (pino0)|(pino1)|~(pino2));
+}
+#endif
+
+
+#ifdef catodo
+void pontos_intermitentes(void)
+{
+       GPIO_escrita(portalB_base, pino6|pino7, 0x00|0x00);
+       GPIO_escrita(portalD_base, pino3|pino2|pino6, 0x00|0x00|pino6);
+       //GPIO_escrita(portalE_base, pino0|pino1|pino2, ~pino0|~pino1|pino2);
+
+       GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, ~pino0|~pino1|~pino2|~pino3);
+       GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, ~pino4|~pino5|~pino6|~pino7);
+}
+#endif
+
+#ifdef anodo
+void limpa_diplay(void)
+{
+    GPIO_escrita(portalB_base, pino6|pino7, 0x00|0x00);
+    GPIO_escrita(portalD_base, pino3|pino2|pino6, 0x00|0x00|pino6);
+    GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, 0x00|0x00|0x00|0x00);
+    GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, 0x00|0x00|0x00|0x00);
+}
+#endif
+
+#ifdef catodo
+
+void limpa_diplay(void)
+{
+    GPIO_escrita(portalB_base, pino6|pino7, pino6|pino7);
+    GPIO_escrita(portalD_base, pino3|pino2|pino6, pino3|pino2|0x00);
+    GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, pino0|pino1|pino2|pino3);
+    GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, pino4|pino5|pino6|pino7);
+}
+
+#endif
+
 
 void habilita_interrupcao_global(void){
     //passo3
@@ -235,7 +314,7 @@ int main(void)
     //GPIO_escrita(portalF_BASE, pino2, pino2);
 
     habilita_interrupcao_global();
-    //habilitaInterrupcao(30);
+    habilitaInterrupcao(30);
     //configInt_GPIO(portalF_BASE, pino4, GPIO_FallingEdge);
     //habilitaInt_GPIO(portalF_BASE, pino4);
     habilitaSystick();
@@ -243,7 +322,5 @@ int main(void)
     configPeriodoSystick(200000000);
 
     // Loop principal
-    while(1)
-    {
-    }
+    while(1){}
 }
