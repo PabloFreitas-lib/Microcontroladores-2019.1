@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//#define anodo
-#define catodo
-#define botao_sw2
+#define anodo
+//#define catodo
+//#define botao_sw2
 //#define matrix
 
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
@@ -32,14 +32,6 @@
 #define portalGPIO_d                0x08
 #define portalGPIO_e                0x10
 #define portalGPIO_f                0x20
-                                         //AHB                          //APB
-
-#define portalA_base_AHB            0x40058000                //0x40004000
-#define portalB_base_AHB            0x40059000                //0x40005000
-#define portalC_base_AHB            0x4005A000                //0x40006000
-#define portalD_base_AHB            0x4005B000                //0x40007000
-#define portalE_base_AHB            0x4005C000                //0x40024000
-#define portalF_base_AHB            0x4005D000                //0x40025000
 
 #define portalA_base                0x40004000
 #define portalB_base                0x40005000
@@ -73,13 +65,13 @@ int um_minuto_anodo = 3000;
 
 #ifdef catodo
 unsigned int vector_numbers[17]={0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0x88,0x83,0xC6,0xA1,0x86,0x8E,0xFC};
-unsigned int vector_digits[4]={0x40,0x80,0x04,0x08}; // sinal alto funciona
+unsigned int vector_digits[5]={0x40,0x80,0x04,0x08,0xCC}; // sinal alto funciona
 int um_minuto_catodo = 1500;
 #endif
 
 //                  Display    1d    2d   3d   4d
 const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
-const float timer_doopler = 0.35;
+const float timer_doopler = 0.33;
 
 
 
@@ -638,7 +630,7 @@ int main(void)
     {
         // Atraso
     for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
-    digito(0);
-        botao();
+    digito(2);
+    numero(1);
     }
  }
