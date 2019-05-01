@@ -1,5 +1,10 @@
 1- Cite os dois modelos de arquitetura de microprocessadores e microcontroladores estudadas, inidicando as vantagens e desvantagens de cada uma delas. (2017.1 e 2)
 
+Modelo Von Neumann:
+Mesmo barramento para memoria de programas e memoria de dados. Congestiona o fluxo no barramento.
+Modelo de Harvard: Barramentos separados para programas e dados.
+
+
 2- Cite duas classificações de conjunto de instrução de microprocessadores e microcontroladoress estudadas, indicando as vantagens e desvantagens de cada uma delas.(2017.1 e 2)
 
 3-Qual a vantagem e desvantagem de utilizar a configuração de corrente de um pino de saída com mínima de 2mA? E com máxima de 8 mA?(2017.1 e 2)
