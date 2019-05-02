@@ -1,5 +1,10 @@
 #include <stdint.h>
+
 #define catodo
+//#define interrupcao
+//#define systick
+#define timer_code
+
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
 
 #define SYSCTL_RCGC2_GPIOF          0x00000020
@@ -29,7 +34,7 @@
 #define RIS                         0x400FE050
 #define GPIO_O_ICR                  0x41C
 
-/*#define config_80MHZ                0xC1000000      //RCC2
+/*#define config_80MHZ              0xC1000000      //RCC2
 #define config_50MHZ                0x01C00000      // Divisao por 4 e usar o sysdiv
 #define config_20MHZ                0x04C00000      // Divisao por 10 e usar o sysdiv
 #define config_4MHZ                 0x98C00000      //RCC2 divisao por 50
@@ -172,6 +177,10 @@ int um_minuto_catodo = 1500;
 
 #define TIMER_O_ICR                 0x024
 
+#define GPIO_O_LOCK                 0x520
+#define GPIO_O_CR                   0x524
+#define GPIO_LOCK_KEY               0x4C4F434B
+
 
 const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
 const float timer_doopler = 0.33;
@@ -285,6 +294,20 @@ void limpa_diplay(void)
 #endif
 
 
+
+void toggle(uint8_t pino,uint32_t portal)
+{
+    if(GPIO_Leitura(portal, pino)== pino)
+    {
+        GPIO_escrita(portal, pino, ~pino);
+        delay_system(200);
+    }
+    else
+    {
+        GPIO_escrita(portal, pino, pino);
+        delay_system(200);
+    }
+}
                         // interrupcao
 
 
@@ -344,21 +367,20 @@ void limpaInt_GPIO(uint32_t portal, uint8_t pino){
     ESC_REG(portal + GPIO_O_ICR) = pino;
 }
 
-void trataIntGPIOF(void){
+
+void trataIntGPIOF(void)
+{
     // primeira coisa: descobrir qual foi a fonte da interrupção
     limpaInt_GPIO(portalF_BASE, pino4);
 
-    if(GPIO_Leitura(portalF_BASE, pino2)== pino2)
-    {
-    GPIO_escrita(portalF_BASE, pino2, ~pino2);
-    delay_system(200);
-    }
-    else
-    {
-        GPIO_escrita(portalF_BASE, pino2, pino2);
-        delay_system(200);
-    }
+    if(GPIO_Leitura(portalF_BASE, pino0)!= pino0)
+        toggle(pino2, portalF_BASE);
+    if(GPIO_Leitura(portalF_BASE, pino4)!= pino4)
+        toggle(pino1, portalF_BASE);
+
 }
+
+
 
 void trataSystick(void)
 {
@@ -371,6 +393,7 @@ void trataSystick(void)
             GPIO_escrita(portalF_BASE, pino2, pino2);
         }
 }
+
 
                         // TIMER
 
@@ -429,6 +452,11 @@ void desabilitaTimer(uint32_t timer_base,uint32_t timer)
     ESC_REG(timer_base + TIMER_O_CTL) &= ~ timer & (TIMER_CTL_TAEN | TIMER_CTL_TBEN);
 }
 
+void trataTimer(void)
+{
+
+}
+
 
                             // MAIN
 int main(void)
@@ -441,24 +469,50 @@ int main(void)
 
     configuraPino_saida(portalF_BASE, pino2|pino1);
 
-    //unlock_GPIO(portalF_BASE);
-    //configuraPino_entrada(portalF_BASE, pino4|pino0);
-    //ESC_REG(portalF_BASE+GPIO_O_PUR)|= pino4|pino0;
-    //lock_GPIO(portalF_BASE);
+    unlock_GPIO(portalF_BASE);
+
+    configuraPino_entrada(portalF_BASE, pino4|pino0);
+    ESC_REG(portalF_BASE+GPIO_O_PUR)|= pino4|pino0;
+
+    lock_GPIO(portalF_BASE);
 
     //GPIO_escrita(portalF_BASE, pino2, pino2);
-    //desabilitaIntSystick();
+
+#ifdef interrupcao
+
     habilita_interrupcao_global();
-    //habilitaInterrupcao(30);
-    //configInt_GPIO(portalF_BASE, pino4, GPIO_FallingEdge);
-    //habilitaInt_GPIO(portalF_BASE, pino4);
-    //habilitaSystick();
-    //habilitaIntSystick();
-    //configPeriodoSystick(200000000);
+    habilitaInterrupcao(30);
+    configInt_GPIO(portalF_BASE, pino4|pino0, GPIO_FallingEdge);
+    habilitaInt_GPIO(portalF_BASE, pino4|pino0);
+
+#endif
+
+#ifdef systick
+
+    habilitaSystick();
+    habilitaIntSystick();
+    configPeriodoSystick(200000000);
+
+#endif
+
+#ifdef timer_code
+
+    habilita_periferico_timer(modulo_timer_0);
+    configuraTimer(TIMER0_BASE, TIMER_A);
+    configuraPeriodoTimer(TIMER0_BASE,TIMER_A, 50000);
+    habilitaIntTimer(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+    habilitaTimer(TIMER0_BASE, TIMER_A);
+
+#endif
 
     // Loop principal
     while(1){}
 }
+
+
+
+
+
 
 /*
  * tratabotao
@@ -478,4 +532,3 @@ int main(void)
  * }
  *
  * */
- */
