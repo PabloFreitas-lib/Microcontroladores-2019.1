@@ -7,11 +7,11 @@
 
 //#define anodo //Placa Preta ou display 7segmentos branco
 #define catodo  // Placa verde ou display 7segmentos preto
-//#define botao_sw2
+#define botao_sw2
 //#define matrix
 //#define relogio_on
-//#define cronometro_on
-#define questao_10
+#define cronometro_on
+//#define questao_10
 
 // nao sei oq fazem
 #define SYSCTL_RCGC2_GPIOF          0x00000020
@@ -402,6 +402,10 @@ void trataIntGPIOF(void)
     limpaInt_GPIO(portalF_base, pino4|pino0);
     sw1=0,sw2=0;
 
+    habilitaSystick();
+           habilitaIntSystick();
+           configPeriodoSystick(100);
+
     if(GPIO_leitura(portalF_base, pino4)!=pino4)
     {
         sw1=1;
@@ -410,9 +414,9 @@ void trataIntGPIOF(void)
     {
         sw2=1;
     }
-    habilitaSystick();
-       habilitaIntSystick();
-       configPeriodoSystick(systick_cronometro);
+
+    desabilitaIntSystick();
+
 
 
 #endif
@@ -437,13 +441,13 @@ void trataSystick(void)
     if(sw1)
     {
         toggle(pino1); // para ser outro pino, basta passar pino como argumento da funcao trataSystick
-        desabilitaIntSystick();
+        //desabilitaIntSystick();
 
     }
     if(sw2)
     {
        toggle(pino2);
-       desabilitaIntSystick();
+       //desabilitaIntSystick();
     }
 
 
@@ -593,7 +597,7 @@ int main(void)
     habilita_interrupcao_global();
 
 
-    //habilita_interrupcao_global();
+    habilita_interrupcao_global();
     habilitaInterrupcao(int_port_F);
     configInt_GPIO(portalF_base, pino4|pino0, GPIO_FallingEdge);
     habilitaInt_GPIO(portalF_base, pino4|pino0);
@@ -602,5 +606,6 @@ int main(void)
 
     while(1)
     {
+        cronometro();
     }
 }
