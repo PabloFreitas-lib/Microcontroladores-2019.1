@@ -11,6 +11,7 @@
 //#define matrix
 //#define relogio_on
 //#define cronometro_on
+#define questao_10
 
 // nao sei oq fazem
 #define SYSCTL_RCGC2_GPIOF          0x00000020
@@ -124,7 +125,7 @@ const float timer_doopler = 0.35;
 
 //usado para varredura da matrix de botao se os botoes que representa as linhas estivem de PULLUP
 int vector_matrix[4] = {0x0E,0x0D,0x0B,0x07};
-unsigned int n1=0,n2=0,n3=0,n4=0,j=0,c=0,l=0,pause=1,i=0,decimo_segundo=10,first=0,m2;
+unsigned int n1=0,n2=0,n3=0,n4=0,j=0,c=0,l=0,pause=1,i=0,decimo_segundo=10,first=0,m2,sw1=0,sw2=0;
 
 // ************ FIM Var Globais *******************************************************************
 
@@ -367,6 +368,8 @@ void limpaInt_GPIO(uint32_t portal, uint8_t pino)
 
 void trataIntGPIOF(void)
 {
+#ifdef cronometro_on
+
     // primeira coisa: descobrir qual foi a fonte da interrupção
     desabilitaIntSystick();
     limpaInt_GPIO(portalF_base, pino4|pino0);
@@ -392,6 +395,28 @@ void trataIntGPIOF(void)
     habilitaSystick();
     habilitaIntSystick();
     configPeriodoSystick(systick_cronometro);
+
+#endif
+
+#ifdef questao_10
+    limpaInt_GPIO(portalF_base, pino4|pino0);
+    sw1=0,sw2=0;
+
+    if(GPIO_leitura(portalF_base, pino4)!=pino4)
+    {
+        sw1=1;
+    }
+    if(GPIO_leitura(portalF_base, pino0)!=pino0)
+    {
+        sw2=1;
+    }
+    habilitaSystick();
+       habilitaIntSystick();
+       configPeriodoSystick(systick_cronometro);
+
+
+#endif
+
 }
 
 void trataSystick(void)
@@ -405,6 +430,23 @@ void trataSystick(void)
 
 #ifdef relogio_on
     m2++;
+#endif
+
+#ifdef questao_10
+
+    if(sw1)
+    {
+        toggle(pino1); // para ser outro pino, basta passar pino como argumento da funcao trataSystick
+        desabilitaIntSystick();
+
+    }
+    if(sw2)
+    {
+       toggle(pino2);
+       desabilitaIntSystick();
+    }
+
+
 #endif
 }
 
@@ -524,7 +566,7 @@ void relogio(unsigned int h1,unsigned int h2,unsigned int m1,unsigned int m2)
 
 int main(void)
 {
-    m2=6;
+    //m2=6;
     volatile uint32_t ui32Loop;
     habilita_clockGPIO(portalGPIO_e|portalGPIO_c|portalGPIO_d | portalGPIO_b| portalGPIO_f);
 
@@ -549,9 +591,7 @@ int main(void)
     configuraPino_saida(portalF_base, pino1|pino2);
 
     habilita_interrupcao_global();
-    habilitaSystick();
-    habilitaIntSystick();
-    configPeriodoSystick(0xFFFFFF);
+
 
     //habilita_interrupcao_global();
     habilitaInterrupcao(int_port_F);
