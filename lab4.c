@@ -1,7 +1,8 @@
 #include <stdint.h>
-#define catodo
-#define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
 
+#define catodo
+
+#define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
 #define SYSCTL_RCGC2_GPIOF          0x00000020
 #define SYSCTL_RCGCGPIO             0x400FE608
 #define SYSCTL_RCGC2_R              0x400FE108
@@ -43,13 +44,6 @@
 #define portalD_BASE                0x40007000
 #define portalE_BASE                0x40024000
 #define portalF_BASE                0x40025000
-
-#define portalA_base                0x40004000
-#define portalB_base                0x40005000
-#define portalC_base                0x40006000
-#define portalD_base                0x40007000
-#define portalE_base                0x40024000
-#define portalF_base                0x40025000
 
 #define portalGPIO_a                0x01
 #define portalGPIO_b                0x02
@@ -102,6 +96,18 @@
 #define NVIC_ST_CTRL_INTEN          0x2
 #define NVIC_ST_RELOAD              0xE000E014
 
+#define GPIO_O_LOCK                 0x520
+#define GPIO_O_CR                   0x524
+#define GPIO_LOCK_KEY               0x4C4F434B
+
+const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
+const float timer_doopler = 0.35;
+
+int n1=0,n2=0,n3=0,n4=0;
+
+int systick_cronometro = 5000000;
+int pause = 0;
+
 #ifdef anodo
 
 unsigned int vector_numbers[17]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,0x03};
@@ -111,12 +117,9 @@ int um_minuto_anodo = 3000;
 
 #ifdef catodo
 unsigned int vector_numbers[17]={0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0x88,0x83,0xC6,0xA1,0x86,0x8E,0xFC};
-unsigned int vector_digits[5]={0x40,0x80,0x04,0x08,0xCC}; // sinal alto funciona
+unsigned int vector_digits[4]={0x40,0x80,0x04,0x08}; // sinal alto funciona
 int um_minuto_catodo = 1500;
 #endif
-
-const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
-const float timer_doopler = 0.33;
 
 void habilita_clockGPIO(uint32_t portalGPIO)
 {
@@ -158,23 +161,23 @@ void GPIO_escrita(uint32_t portal, uint8_t pino, uint8_t valor)
 
 void numero(int i)
 {
-    GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, vector_numbers[i]);
-    GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, vector_numbers[i]);
+    GPIO_escrita(portalE_BASE, pino0|pino1|pino2|pino3, vector_numbers[i]);
+    GPIO_escrita(portalC_BASE, pino4|pino5|pino6|pino7, vector_numbers[i]);
 }
 void digito(int i)
 {
-    GPIO_escrita(portalB_base, pino6|pino7, vector_digits[i]);
-    GPIO_escrita(portalD_base, pino3|pino2, vector_digits[i]);
+    GPIO_escrita(portalB_BASE, pino6|pino7, vector_digits[i]);
+    GPIO_escrita(portalD_BASE, pino3|pino2, vector_digits[i]);
 }
 
 
 #ifdef anodo
 void pontos_intermitentes(void)
 {
-       GPIO_escrita(portalB_base, pino6|pino7, pino6|pino7);
-       GPIO_escrita(portalD_base, pino3|pino2, pino3|pino2);
-       GPIO_escrita(portalD_base, pino6, ~(pino6));
-       GPIO_escrita(portalE_base, pino0|pino1|pino2, (pino0)|(pino1)|~(pino2));
+       GPIO_escrita(portalB_BASE, pino6|pino7, pino6|pino7);
+       GPIO_escrita(portalD_BASE, pino3|pino2, pino3|pino2);
+       GPIO_escrita(portalD_BASE, pino6, ~(pino6));
+       GPIO_escrita(portalE_BASE, pino0|pino1|pino2, (pino0)|(pino1)|~(pino2));
 }
 #endif
 
@@ -182,22 +185,22 @@ void pontos_intermitentes(void)
 #ifdef catodo
 void pontos_intermitentes(void)
 {
-       GPIO_escrita(portalB_base, pino6|pino7, 0x00|0x00);
-       GPIO_escrita(portalD_base, pino3|pino2|pino6, 0x00|0x00|pino6);
-       //GPIO_escrita(portalE_base, pino0|pino1|pino2, ~pino0|~pino1|pino2);
+       GPIO_escrita(portalB_BASE, pino6|pino7, 0x00|0x00);
+       GPIO_escrita(portalD_BASE, pino3|pino2|pino6, 0x00|0x00|pino6);
 
-       GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, ~pino0|~pino1|~pino2|~pino3);
-       GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, ~pino4|~pino5|~pino6|~pino7);
+       GPIO_escrita(portalE_BASE, pino0|pino1|pino2|pino3, ~pino0|~pino1|~pino2|~pino3);
+       GPIO_escrita(portalC_BASE, pino4|pino5|pino6|pino7, ~pino4|~pino5|~pino6|~pino7);
 }
 #endif
+
 
 #ifdef anodo
 void limpa_diplay(void)
 {
-    GPIO_escrita(portalB_base, pino6|pino7, 0x00|0x00);
-    GPIO_escrita(portalD_base, pino3|pino2|pino6, 0x00|0x00|pino6);
-    GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, 0x00|0x00|0x00|0x00);
-    GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, 0x00|0x00|0x00|0x00);
+    GPIO_escrita(portal_BASE, pino6|pino7, 0x00|0x00);
+    GPIO_escrita(portalD_BASE, pino3|pino2|pino6, 0x00|0x00|pino6);
+    GPIO_escrita(portalE_BASE, pino0|pino1|pino2|pino3, 0x00|0x00|0x00|0x00);
+    GPIO_escrita(portalC_BASE, pino4|pino5|pino6|pino7, 0x00|0x00|0x00|0x00);
 }
 #endif
 
@@ -205,14 +208,132 @@ void limpa_diplay(void)
 
 void limpa_diplay(void)
 {
-    GPIO_escrita(portalB_base, pino6|pino7, pino6|pino7);
-    GPIO_escrita(portalD_base, pino3|pino2|pino6, pino3|pino2|0x00);
-    GPIO_escrita(portalE_base, pino0|pino1|pino2|pino3, pino0|pino1|pino2|pino3);
-    GPIO_escrita(portalC_base, pino4|pino5|pino6|pino7, pino4|pino5|pino6|pino7);
+    GPIO_escrita(portalB_BASE, pino6|pino7, pino6|pino7);
+    GPIO_escrita(portalD_BASE, pino3|pino2|pino6, pino3|pino2|0x00);
+    GPIO_escrita(portalE_BASE, pino0|pino1|pino2|pino3, pino0|pino1|pino2|pino3);
+    GPIO_escrita(portalC_BASE, pino4|pino5|pino6|pino7, pino4|pino5|pino6|pino7);
 }
 
 #endif
 
+void escreve_4_digitos(int n4,int n3,int n2,int n1)
+{
+
+                                        // [ - - - n1]
+                                       digito(3);
+                                       numero(n1);
+                                       delay_system(timer_doopler);
+
+                                       // [ - - - -]
+                                       limpa_diplay();
+                                       delay_system(timer_doopler);
+
+                                       // [ - - n2 -]
+
+                                       digito(2);
+                                       numero(n2);
+                                       delay_system(timer_doopler);
+
+                                       // [ - - - -]
+                                       limpa_diplay();
+                                       delay_system(timer_doopler);
+
+                                       // [ - n3 - -]
+                                       digito(1);
+                                       numero(n3);
+                                       delay_system(timer_doopler);
+
+                                       // [ - - - -]
+                                       limpa_diplay();
+                                       delay_system(timer_doopler);
+
+                                       // [ n4 - - -]
+                                       digito(0);
+                                       numero(n4);
+                                       delay_system(timer_doopler);
+
+                                       // [ - - - -]
+                                       limpa_diplay();
+                                       delay_system(5);
+}
+
+void relogio_systick(void)
+{
+
+                while(n4<3) // dezena hora 0 - 2
+                {
+                    if(n3==10 && (n4 == 0 || n4 == 1) )
+                    {
+                    n4++;
+                    n3=0;
+                    }
+                    else if (n4 == 2 && n3==5)
+                    {
+                        n4++;
+                    }
+                    while(n3<10) //unidade hora 0 - 9
+                    {
+                        if(n2==7)
+                        {
+                          n3++;
+                          n2=0;
+                        }
+                       while(n2<7) //minuto dezena 0 - 6
+                       {
+                           if(n1==10)
+                           {
+                               n2++;
+                               n1=0;
+                           }
+                           while(n1<10) // minuto unidade 0 - 9
+                           {
+                             // display [ - - n2 n2 ]
+                             //#ifdef catodo
+                             //   for (j=0; j<um_minuto_catodo; j++)
+                             //#endif
+
+                             #ifdef anodo
+                                for (j=0; j<um_minuto_anodo; j++)
+                             #endif
+                             //{
+                               escreve_4_digitos(n4, n3, n2, n1);
+
+                               #ifdef anodo
+                                   if(j%25 == 0)
+                                   {
+                                       pontos_intermitentes();
+                                       delay_system(timer_doopler);
+
+                                       limpa_diplay();
+                                       delay_system(timer_doopler);
+                                   }
+                                #endif
+
+                                #ifdef catodo
+
+                                #endif
+
+                             }
+                             //n1++; // fim do while n1
+                             //}
+                          }// fim do while n2
+                       }// fim do while n3
+                    } // fim do while n4
+                n1=0,n2=0,n3=0,n4=0; // recomeco
+
+}
+
+
+void unlock_GPIO(uint32_t portal)
+{
+       ESC_REG(portal + GPIO_O_LOCK) = GPIO_LOCK_KEY;
+       ESC_REG(portal + GPIO_O_CR) = 0x01;
+}
+
+void lock_GPIO(uint32_t portal)
+{
+    ESC_REG(portal + GPIO_O_LOCK) = 0;
+}
 
 void habilita_interrupcao_global(void){
     //passo3
@@ -270,57 +391,217 @@ void limpaInt_GPIO(uint32_t portal, uint8_t pino){
     ESC_REG(portal + GPIO_O_ICR) = pino;
 }
 
-void trataIntGPIOF(void){
-    // primeira coisa: descobrir qual foi a fonte da interrupção
-    limpaInt_GPIO(portalF_BASE, pino4);
-
-    if(GPIO_Leitura(portalF_BASE, pino2)== pino2)
+void toggle(uint8_t pino)
+{
+    if(GPIO_Leitura(portalF_BASE, pino)== pino)
     {
-    GPIO_escrita(portalF_BASE, pino2, ~pino2);
-    delay_system(200);
+        GPIO_escrita(portalF_BASE, pino, ~pino);
+        delay_system(200);
     }
     else
     {
-        GPIO_escrita(portalF_BASE, pino2, pino2);
+        GPIO_escrita(portalF_BASE, pino, pino);
         delay_system(200);
     }
+
+}
+
+void cronometro_systick(void){
+
+int j=0;
+
+
+
+    while(n4<=5) // dezena minuto 0 - 6
+    {
+        while(n3<=9) //unidade minuto 0 - 9
+        {
+            while(n2<=9) //segundo dezena 0 - 6
+            {
+                while(n1<=9) // segundos unidade 0 - 9
+                {
+                    for (j=0; j<4; j++)
+                    {
+                        escreve_4_digitos(n4, n3, n2, n1);
+                        if(GPIO_Leitura(portalF_BASE,pino0)!= pino0) // botao zerar
+                            {
+                                n4=0,n3=0,n2=0,n1=0;
+                                delay_system(45);
+                            }
+
+                        #ifdef anodo
+                        if(j%50==0)
+                        {
+                            pontos_intermitentes();
+                            delay_system(timer_doopler);
+
+                            limpa_diplay();
+                            delay_system(timer_doopler);
+                        }
+                        #endif
+                    }
+                }
+                if(n1==10)
+                {
+                    n2++;
+                    n1=0;
+                }
+            }
+            if(n2==10)
+            {
+                ++n3;
+                n2=0;
+            }
+        }
+        if(n3==10)
+        {
+            ++n4;
+            n3=0;
+        }
+    }
+    n1=0,n2=0,n3=0,n4=0;
+}
+
+void trataIntGPIOF(void)
+{
+    // primeira coisa: descobrir qual foi a fonte da interrupção
+    limpaInt_GPIO(portalF_BASE, pino4);
+
+    /*if(GPIO_Leitura(portalF_BASE,pino4)!= pino4) // botao pausar/continuar
+    {
+        delay_system(45);
+        if(!pause)
+        {
+            pause=1;
+            desabilitaIntSystick();
+        }
+        else if(pause)
+        {
+            pause=0;
+            habilitaSystick();
+            habilitaIntSystick();
+            configPeriodoSystick(systick_cronometro);
+        }
+    }*/
+
+
+
 }
 
 void trataSystick(void)
 {
-    if(GPIO_Leitura(portalF_BASE, pino2)== pino2)
+   n1++;
+}
+
+void cronometro(void){
+
+int pause = 0;
+int n1=0,n2=0,n3=0,n4=0,j=0;
+
+    while(n4<=5) // dezena minuto 0 - 6
+    {
+
+        while(n3<=9) //unidade minuto 0 - 9
         {
-        GPIO_escrita(portalF_BASE, pino2, ~pino2);
+            while(n2<=9) //segundo dezena 0 - 6
+            {
+                while(n1<=9) // segundos unidade 0 - 9
+                {
+                    for (j=0; j<4; j++)
+                    {
+                        escreve_4_digitos(n4, n3, n2, n1);
+
+                        if(GPIO_Leitura(portalF_BASE,pino4)!= pino4) // botao pausar/continuar
+                        {
+                            delay_system(45);
+                            if(!pause)
+                            {
+                                pause=1;
+                            }
+                            else if(pause)
+                            {
+                                pause=0;
+                            }
+                        }
+                        if(GPIO_Leitura(portalF_BASE,pino0)!= pino0) // botao zerar
+                        {
+                            delay_system(45);
+                            n1=0;n2=0;n3=0;n4=0;
+                        }
+                        #ifdef anodo
+                        if(j%50==0)
+                        {
+                            pontos_intermitentes();
+                            delay_system(timer_doopler);
+
+                            limpa_diplay();
+                            delay_system(timer_doopler);
+                        }
+                        #endif
+                    }
+                    //if(!pause)
+                      //                          n1++;
+                }
+
+                if(n1==10)
+                                {
+                                n2++;
+                                n1=0;
+                                }
+            }
+            if(n2==10)
+                        {
+                            ++n3;
+                            n2=0;
+                        }
         }
-        else
-        {
-            GPIO_escrita(portalF_BASE, pino2, pino2);
-        }
+    if(n3==10)
+           {
+           ++n4;
+           n3=0;
+           }
+    }
+    n1=0,n2=0,n3=0,n4=0;
 }
 
 int main(void)
 {
     volatile uint32_t ui32Loop;
-    habilita_clockGPIO(portalGPIO_f);
+    habilita_clockGPIO(portalGPIO_e|portalGPIO_c|portalGPIO_d | portalGPIO_b| portalGPIO_f);
 
     // Faz leitura dummy para efeito de atraso
     ui32Loop = ESC_REG(SYSCTL_RCGC2_R);
 
-    configuraPino_saida(portalF_BASE, pino2);
+    configuraPino_saida(portalC_BASE,pino4|pino5|pino6|pino7);
+    configuraPino_saida(portalE_BASE,pino0|pino1|pino2|pino3);
+    configuraPino_saida(portalB_BASE, pino6|pino7);
+    configuraPino_saida(portalD_BASE, pino2|pino3|pino6);
 
-    //configuraPino_entrada(portalF_BASE, pino4);
-    //ESC_REG(portalF_BASE+GPIO_O_PUR)|= pino4;
+    //configura pino botao sw1
 
-    //GPIO_escrita(portalF_BASE, pino2, pino2);
+    unlock_GPIO(portalF_BASE);
+
+    configuraPino_entrada(portalF_BASE,pino0|pino4);
+    ESC_REG(portalF_BASE+GPIO_O_PUR) |= pino0|pino4;
+
+    lock_GPIO(portalF_BASE);
+
+    //configuraPino_saida(portalF_BASE, pino1|pino2);
 
     habilita_interrupcao_global();
-    habilitaInterrupcao(30);
-    //configInt_GPIO(portalF_BASE, pino4, GPIO_FallingEdge);
-    //habilitaInt_GPIO(portalF_BASE, pino4);
     habilitaSystick();
     habilitaIntSystick();
-    configPeriodoSystick(200000000);
+    configPeriodoSystick(systick_cronometro);
 
-    // Loop principal
-    while(1){}
+    //habilita_interrupcao_global();
+    //habilitaInterrupcao(30);
+    //configInt_GPIO(portalF_BASE, pino4|pino0, GPIO_FallingEdge);
+    //habilitaInt_GPIO(portalF_BASE, pino4|pino0);
+
+
+
+    while(1)
+    {
+        cronometro();
+    }
 }
