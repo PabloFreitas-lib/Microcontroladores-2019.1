@@ -9,7 +9,7 @@
 #define catodo  // Placa verde ou display 7segmentos preto
 //#define botao_sw2
 //#define matrix
-#define relogio_on
+//#define relogio_on
 //#define cronometro_on
 
 // nao sei oq fazem
@@ -80,12 +80,6 @@ int um_minuto_catodo = 1500;
 
 #endif
 
-const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
-const float timer_doopler = 0.35;
-
-//usado para varredura da matrix de botao se os botoes que representa as linhas estivem de PULLUP
-int vector_matrix[4] = {0x0E,0x0D,0x0B,0x07};
-unsigned int n1=0,n2=0,n3=0,n4=0,j=0,c=0,l=0,pause=1,i=0,decimo_segundo=10,first=0,m2;
 
 // Defines to Interrupcao/Systick
 #define GPIO_O_ICR                  0x41C
@@ -121,7 +115,18 @@ unsigned int n1=0,n2=0,n3=0,n4=0,j=0,c=0,l=0,pause=1,i=0,decimo_segundo=10,first
 #define NVIC_ST_CTRL_INTEN          0x2
 #define NVIC_ST_RELOAD              0xE000E014
 
+
+// *********** VAR Globais ***********************************************************************
 int systick_cronometro = 1500000,systick_relogio = 90000000;
+
+const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
+const float timer_doopler = 0.35;
+
+//usado para varredura da matrix de botao se os botoes que representa as linhas estivem de PULLUP
+int vector_matrix[4] = {0x0E,0x0D,0x0B,0x07};
+unsigned int n1=0,n2=0,n3=0,n4=0,j=0,c=0,l=0,pause=1,i=0,decimo_segundo=10,first=0,m2;
+
+// ************ FIM Var Globais *******************************************************************
 
 
 //----------------------------------------------FUNCOES GERAIS-------------------------------------------------------------------
@@ -557,6 +562,5 @@ int main(void)
 
     while(1)
     {
-      relogio(1, 6, 4, m2);
     }
 }
