@@ -6,6 +6,7 @@
 
 #define SYSCTL_RCGC2_R              0x400FE108
 #define SYSCTL_RCGC2_GPIOF          0x00000020
+
 #define GPIO_PORTF_DIR_R            0x40025400
 #define GPIO_PORTF_DEN_R            0x4002551C
 #define GPIO_PORTF_DATA_R           0x400253FC
@@ -13,7 +14,9 @@
 #define GPIO_PORTF_PUR              0x40025510
 
 #define SYSCTL_RCGCGPIO             0x400FE608
+
 #define GPIOHBCTL                   0x400FE06C
+
 #define GPIO_O_DIR                  0x400
 #define GPIO_O_DR2R                 0x500
 #define GPIO_O_DEN                  0x51C
@@ -48,7 +51,6 @@
 #define GPIO_O_LOCK                 0x520
 #define GPIO_O_CR                   0x524
 #define GPIO_LOCK_KEY               0x4C4F434B
-//poderia ter passado em decimal
 
 
 void habilita_clockGPIO(uint32_t portalGPIO)
@@ -91,8 +93,8 @@ void GPIO_escrita(uint32_t portal, uint8_t pino, uint8_t valor)
 
 void unlock_GPIO(uint32_t portal)
 {
-       ESC_REG(portal + GPIO_O_LOCK) = GPIO_LOCK_KEY;
-       ESC_REG(portal + GPIO_O_CR) = 0x01;
+    ESC_REG(portal + GPIO_O_LOCK) = GPIO_LOCK_KEY;
+    ESC_REG(portal + GPIO_O_CR) = 0x01;
 }
 
 void lock_GPIO(uint32_t portal)
@@ -107,25 +109,25 @@ int main(void)
     habilita_clockGPIO(portalGPIO_f);
     habilita_AHB(portalGPIO_f);
 
-    //funcao que pasa quanquer portal, escrevo o bit dentro deste reg
     // Faz leitura dummy para efeito de atraso
     ui32Loop = ESC_REG(SYSCTL_RCGC2_R);
 
     // Habilita o pino 3 do portal F, configura como saída digital
-    configuraPino_saida(portalF_base_AHB,pino1); // red
-    configuraPino_saida(portalF_base_AHB,pino3); // green
-    configuraPino_saida(portalF_base_AHB,pino2); // blue
+    configuraPino_saida(portalF_base_AHB,pino1|pino2|pino3); // red|blue|green
 
 
-    // Habilita o pino 4 do portal, configura como entrada com weak pull up
-    configuraPino_entrada(portalF_base_AHB,pino4); // SW1
-    ESC_REG(portalF_base_AHB+GPIO_O_PUR)|= pino4;
+
+
 
     unlock_GPIO(portalF_base_AHB);
 
-    // Habilita o pino 0 do portal, configura como entrada com weak pull up
-    configuraPino_entrada(portalF_base_AHB,pino0); // SW2
-    ESC_REG(portalF_base_AHB+GPIO_O_PUR)|= pino0;
+     // Habilita o pino 4 do portal, configura como entrada com weak pull up
+        configuraPino_entrada(portalF_base_AHB,pino4); // SW1
+        ESC_REG(portalF_base_AHB+GPIO_O_PUR)|= pino4;
+
+     // Habilita o pino 0 do portal, configura como entrada com weak pull up
+        configuraPino_entrada(portalF_base_AHB,pino0); // SW2
+        ESC_REG(portalF_base_AHB+GPIO_O_PUR)|= pino0;
 
     lock_GPIO(portalF_base_AHB);
 
