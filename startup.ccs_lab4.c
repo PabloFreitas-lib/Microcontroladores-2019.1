@@ -41,7 +41,6 @@ static void IntDefaultHandler(void);
 //
 //*****************************************************************************
 extern void _c_int00(void);
-
 //*****************************************************************************
 //
 // Linker variable that marks the top of the stack.
@@ -55,8 +54,8 @@ extern uint32_t __STACK_TOP;
 //
 //*****************************************************************************
 // To be added by user
-extern trataSystick(void);
-extern trataIntGPIOF(void);
+extern void trataIntGPIOF(void);
+extern void trataSystick(void);
 //*****************************************************************************
 //
 // The vector table.  Note that the proper constructs must be placed on this to
