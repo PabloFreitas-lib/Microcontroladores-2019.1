@@ -3,29 +3,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define anodo
-//#define catodo
-//#define botao_sw2
-//#define matrix
+//definicoes para o ifdef
 
+//#define anodo //Placa Preta ou display 7segmentos branco
+#define catodo  // Placa verde ou display 7segmentos preto
+//#define botao_sw2
+#define matrix
+
+// nao sei oq fazem
+#define SYSCTL_RCGC2_GPIOF          0x00000020
+#define GPIOHBCTL                   0x400FE06C
+
+//escrita em registrador
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
 
-#define SYSCTL_RCGC2_R              0x400FE108
-#define SYSCTL_RCGC2_GPIOF          0x00000020
-#define GPIO_PORTF_DIR_R            0x40025400
-#define GPIO_PORTF_DEN_R            0x4002551C
-#define GPIO_PORTF_DATA_R           0x400253FC
-#define GPIO_PORTF_DR2R             0x40025500
-#define GPIO_PORTF_PUR              0x40025510
+//clock
+#define SYSCTL_RCGC2_R              0x400FE108 // leitura dummy
+#define SYSCTL_RCGCGPIO             0x400FE608 // usada na habilita clockGPIO
 
-#define SYSCTL_RCGCGPIO             0x400FE608
-#define GPIOHBCTL                   0x400FE06C
+
+
+// configuracoes entrada/saida
 #define GPIO_O_DIR                  0x400
 #define GPIO_O_DR2R                 0x500
 #define GPIO_O_DEN                  0x51C
 #define GPIO_O_PUR                  0x510
 #define GPIO_O_DATA                 0x000
 
+//argumentos para habilitar o clock do portalX
 #define portalGPIO_a                0x01
 #define portalGPIO_b                0x02
 #define portalGPIO_c                0x04
@@ -33,6 +38,7 @@
 #define portalGPIO_e                0x10
 #define portalGPIO_f                0x20
 
+//base dos portais
 #define portalA_base                0x40004000
 #define portalB_base                0x40005000
 #define portalC_base                0x40006000
@@ -40,7 +46,7 @@
 #define portalE_base                0x40024000
 #define portalF_base                0x40025000
 
-
+//pinos dos portais
 #define pino0                       0x01
 #define pino1                       0x02
 #define pino2                       0x04
@@ -50,10 +56,12 @@
 #define pino6                       0x40
 #define pino7                       0x80
 
+//serve para da permissao de uso do pino0 do portalF
 #define GPIO_O_LOCK                 0x520
 #define GPIO_O_CR                   0x524
 #define GPIO_LOCK_KEY               0x4C4F434B
-//poderia ter passado em decimal
+
+//usado para varredura da matrix de botao se os botoes que representa as linhas estivem de PULLUP
 int vector_matrix[4] = {0x0E,0x0D,0x0B,0x07};
 
 #ifdef anodo
@@ -65,13 +73,13 @@ int um_minuto_anodo = 3000;
 
 #ifdef catodo
 unsigned int vector_numbers[17]={0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8,0x80,0x90,0x88,0x83,0xC6,0xA1,0x86,0x8E,0xFC};
-unsigned int vector_digits[5]={0x40,0x80,0x04,0x08,0xCC}; // sinal alto funciona
+unsigned int vector_digits[4]={0x40,0x80,0x04,0x08}; // sinal alto funciona
 int um_minuto_catodo = 1500;
 #endif
 
 //                  Display    1d    2d   3d   4d
 const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
-const float timer_doopler = 0.33;
+const float timer_doopler = 0.35;
 
 
 
@@ -630,7 +638,7 @@ int main(void)
     {
         // Atraso
     for(ui32Loop = 0; ui32Loop < 200000; ui32Loop++){}
-    digito(2);
-    numero(1);
+    //digito(0);
+        pontos_intermitentes();
     }
  }
