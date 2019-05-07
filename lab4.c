@@ -7,11 +7,11 @@
 
 //#define anodo //Placa Preta ou display 7segmentos branco
 #define catodo  // Placa verde ou display 7segmentos preto
-#define botao_sw2
+//#define botao_sw2
 //#define matrix
 //#define relogio_on
-#define cronometro_on
-//#define questao_10
+//#define cronometro_on
+#define questao_10
 
 // nao sei oq fazem
 #define SYSCTL_RCGC2_GPIOF          0x00000020
@@ -118,14 +118,15 @@ int um_minuto_catodo = 1500;
 
 
 // *********** VAR Globais ***********************************************************************
-int systick_cronometro = 1500000,systick_relogio = 90000000;
+int systick_cronometro = 1500000,systick_relogio = 16000000,systick_debouncer_number =150000;
 
 const float timer_duvidoso_mili_80MHz = 3800000;  // ~um segundo
 const float timer_doopler = 0.35;
 
 //usado para varredura da matrix de botao se os botoes que representa as linhas estivem de PULLUP
 int vector_matrix[4] = {0x0E,0x0D,0x0B,0x07};
-unsigned int n1=0,n2=0,n3=0,n4=0,j=0,c=0,l=0,pause=1,i=0,decimo_segundo=10,first=0,m2,sw1=0,sw2=0;
+unsigned int n1=0,n2=0,n3=0,n4=0,j=0,c=0,l=0,ctd=0,pause=1,i=0,decimo_segundo=10,first=0,m2,sw1=0,sw2=0;
+unsigned int h1=1,h2=5,m1=4,m2=4;
 
 // ************ FIM Var Globais *******************************************************************
 
@@ -195,6 +196,14 @@ void digito(int i)
 {
     GPIO_escrita(portalB_base, pino6|pino7, vector_digits[i]);
     GPIO_escrita(portalD_base, pino3|pino2, vector_digits[i]);
+
+    #ifdef anodo
+        GPIO_escrita(portalD_base, pino6,pino6);
+    #endif
+
+    #ifdef catodo
+            GPIO_escrita(portalD_base, pino6,~pino6);
+    #endif
 }
 
 
@@ -205,8 +214,15 @@ void digito(int i)
 
 void digito_numeros_iguais(void)
 {
-    GPIO_escrita(portalB_base, pino6|pino7, ~0xCC);
-    GPIO_escrita(portalD_base, pino3|pino2, ~0xCC);
+    GPIO_escrita(portalB_base, pino6|pino7, 0x33);
+    GPIO_escrita(portalD_base, pino3|pino2, 0x33);
+
+    #ifdef anodo
+        GPIO_escrita(portalD_base, pino6,pino6);
+    #endif
+    #ifdef catodo
+            GPIO_escrita(portalD_base, pino6,~pino6);
+    #endif
 }
 
 void limpa_digito(void)
@@ -275,6 +291,7 @@ void pontos_intermitentes(void)
         digito_ponto_intermitente();
         segmento_ponto_intermitente();
 }
+
 //----------------- DISPLAY 7 SEGMENTOS {FIM}-------------------------------------
 
 //                      FUNCOES GERAIS PARA AS QUESTOES
@@ -366,6 +383,13 @@ void limpaInt_GPIO(uint32_t portal, uint8_t pino)
 // ----------- TRATA SYSTICK/ INTERRUPCAO / TIMER
 
 
+void Systick_debouncer(void)
+{
+    habilitaSystick();
+    habilitaIntSystick();
+    configPeriodoSystick(systick_debouncer_number);
+}
+
 void trataIntGPIOF(void)
 {
 #ifdef cronometro_on
@@ -398,24 +422,23 @@ void trataIntGPIOF(void)
 
 #endif
 
+
+
+
 #ifdef questao_10
+
     limpaInt_GPIO(portalF_base, pino4|pino0);
     sw1=0,sw2=0;
-
-    habilitaSystick();
-           habilitaIntSystick();
-           configPeriodoSystick(100);
-
     if(GPIO_leitura(portalF_base, pino4)!=pino4)
     {
-        sw1=1;
+        toggle(pino1);
+        Systick_debouncer();
     }
     if(GPIO_leitura(portalF_base, pino0)!=pino0)
     {
-        sw2=1;
+        toggle(pino2);
+        Systick_debouncer();
     }
-
-    desabilitaIntSystick();
 
 
 
@@ -433,24 +456,22 @@ void trataSystick(void)
 #endif
 
 #ifdef relogio_on
+    ctd++;
+        pontos_intermitentes();
+        delay_system(timer_doopler);
+
+        limpa_diplay();
+        delay_system(timer_doopler);
+    if(ctd==60)
+    {
+    ctd=0;
     m2++;
+    }
 #endif
 
 #ifdef questao_10
 
-    if(sw1)
-    {
-        toggle(pino1); // para ser outro pino, basta passar pino como argumento da funcao trataSystick
-        //desabilitaIntSystick();
-
-    }
-    if(sw2)
-    {
-       toggle(pino2);
-       //desabilitaIntSystick();
-    }
-
-
+desabilitaIntSystick();
 #endif
 }
 
@@ -527,7 +548,7 @@ void cronometro(void)
 }
 
 
-void relogio(unsigned int h1,unsigned int h2,unsigned int m1,unsigned int m2)
+void relogio(void)
 {
     if(h2==10 && (h1 == 0 || h1 == 1) )
     {
@@ -549,20 +570,7 @@ void relogio(unsigned int h1,unsigned int h2,unsigned int m1,unsigned int m2)
         m1++;
         m2=0;
     }
-
-    //for (j=0; j<6380; j++)
-    //{
         escreve_4_digitos(h1, h2, m1, m2);
-        if(j%25 == 0)
-        {
-            pontos_intermitentes();
-            delay_system(timer_doopler);
-
-            limpa_diplay();
-            delay_system(timer_doopler);
-        }
-    //}
-    //n1++;
 }
 
 
@@ -596,16 +604,12 @@ int main(void)
 
     habilita_interrupcao_global();
 
-
-    habilita_interrupcao_global();
     habilitaInterrupcao(int_port_F);
     configInt_GPIO(portalF_base, pino4|pino0, GPIO_FallingEdge);
     habilitaInt_GPIO(portalF_base, pino4|pino0);
 
-
-
     while(1)
     {
-        cronometro();
+
     }
 }
