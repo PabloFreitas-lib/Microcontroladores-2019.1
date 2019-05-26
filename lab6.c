@@ -5,12 +5,6 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/adc.h"
 #include "driverlib/debug.h"
-
-#include <stdint.h>
-#include <stdbool.h>
-#include "inc/hw_types.h"
-#include "inc/hw_memmap.h"
-#include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
 
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
