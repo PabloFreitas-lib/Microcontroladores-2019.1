@@ -31,6 +31,7 @@ unsigned int vector_numbers_dp[10]={~0x50,~0x79,~0x24,~0x30,~0x19,~0x12,~0x02,~0
 unsigned int vector_digits[4]={0x8C,0x4C,0xC8,0xC4}; // sinal baixo funciona
 int um_minuto_anodo = 3000;
 
+
 #endif
 
 #ifdef catodo
