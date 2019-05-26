@@ -31,7 +31,6 @@ unsigned int vector_numbers_dp[10]={~0x50,~0x79,~0x24,~0x30,~0x19,~0x12,~0x02,~0
 unsigned int vector_digits[4]={0x8C,0x4C,0xC8,0xC4}; // sinal baixo funciona
 int um_minuto_anodo = 3000;
 
-
 #endif
 
 #ifdef catodo
@@ -208,6 +207,25 @@ void temperatura_calc(uint32_t temperatura)
     n4 = temperatura/10;
     n3 = temperatura%10;
 }
+
+void ADC_config(void)
+{
+    // Passo 4 (modulo |seq |fonte de disparo | prioridade )
+    ADCSequenceConfigure(ADC0_BASE, 1, ADC_TRIGGER_PROCESSOR, 0);
+
+    // Passo 5
+    // (modulo | seq | passo | fonte(nesse caso sensor de temperatura))
+    ADCSequenceStepConfigure(ADC0_BASE, 1, 0, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE, 1, 1, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE, 1, 2, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE,1,3,ADC_CTL_TS|ADC_CTL_IE|ADC_CTL_END);// adicionamos interrupcao e onde terminar a sequencia
+
+
+    // Passo 6
+    // ( modulo | seq )
+    ADCSequenceEnable(ADC0_BASE, 1);
+
+}
 int main(void)
 {
     uint32_t ui32ADC0Value[4];
@@ -217,6 +235,7 @@ int main(void)
 
         SysCtlClockSet(SYSCTL_SYSDIV_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ);
 
+        // Passo 3
         SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
 
         //habilita_clockGPIO(portalGPIO_e|portalGPIO_c|portalGPIO_d | portalGPIO_b| portalGPIO_f);
@@ -225,26 +244,38 @@ int main(void)
         //Pinos do display
         pinos_display();
 
-        ADCSequenceConfigure(ADC0_BASE, 1, ADC_TRIGGER_PROCESSOR, 0);
-        ADCSequenceStepConfigure(ADC0_BASE, 1, 0, ADC_CTL_TS);
-        ADCSequenceStepConfigure(ADC0_BASE, 1, 1, ADC_CTL_TS);
-        ADCSequenceStepConfigure(ADC0_BASE, 1, 2, ADC_CTL_TS);
-        ADCSequenceStepConfigure(ADC0_BASE,1,3,ADC_CTL_TS|ADC_CTL_IE|ADC_CTL_END);
+        ADC_config();
 
-    ADCSequenceEnable(ADC0_BASE, 1);
+
     while(1)
     {
+        // Passo 7
+        // ( modulo | seq )
         ADCIntClear(ADC0_BASE, 1);
+
+        // Passo 8
+        // ( modulo | seq )
         ADCProcessorTrigger(ADC0_BASE, 1);
 
+        // Passo 9
+        // ( modulo | seq | bMasked)
+        // se bMasked tivesse true ela poderia chamar uma interrupcao, nao iria precisar do pooling
         while(!ADCIntStatus(ADC0_BASE, 1, false)){}
 
 
+        // Passo 10
+        // ( modulo | seq | Endereco de onde armazenar)
         ADCSequenceDataGet(ADC0_BASE, 1, ui32ADC0Value);
 
+
+        // Passo 11
         ui32TempAvg = (ui32ADC0Value[0] + ui32ADC0Value[1] + ui32ADC0Value[2] + ui32ADC0Value[3] + 2)/4;
+
+        // Passo 12
         ui32TempValueC = (1475 - ((2475 * ui32TempAvg)) / 4096)/10;
         ui32TempValueF = ((ui32TempValueC * 9) + 160) / 5;
+
+        //Tarefa 1 lab6
         temperatura_calc(ui32TempValueC);
         escreve_temperatura(n4, n3, n2, n1);
     }
