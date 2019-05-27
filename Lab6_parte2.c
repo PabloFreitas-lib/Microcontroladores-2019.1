@@ -13,6 +13,7 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/rom.h"
 #include "driverlib/uart.h"
+#include "driverlib/systick.h"
 #include "utils/uartstdio.h"
 
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
@@ -57,7 +58,7 @@ unsigned int n1=0,n2=0,n3=0,n4=0;
 // this flag is set by the interrupt routine, and read by the wait loop
 volatile uint32_t newtemp;
 
-uint32_t ui32ADC0Value[4];
+uint32_t ui32ADC0Value[8];
 volatile uint32_t ui32TempAvg;
 volatile uint32_t ui32TempValueC;
 volatile uint32_t ui32TempValueF;
@@ -223,31 +224,68 @@ void temperatura_calc(uint32_t temperatura)
 void ADC_config(void)
 {
     // Passo 4 (modulo |seq |fonte de disparo | prioridade )
-    ADCSequenceConfigure(ADC0_BASE, 1, ADC_TRIGGER_PROCESSOR, 0);
+    ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
 
     // Passo 5
     // (modulo | seq | passo | fonte(nesse caso sensor de temperatura))
-    ADCSequenceStepConfigure(ADC0_BASE, 1, 0, ADC_CTL_TS);
-    ADCSequenceStepConfigure(ADC0_BASE, 1, 1, ADC_CTL_TS);
-    ADCSequenceStepConfigure(ADC0_BASE, 1, 2, ADC_CTL_TS);
-    ADCSequenceStepConfigure(ADC0_BASE,1,3,ADC_CTL_TS|ADC_CTL_IE|ADC_CTL_END);// adicionamos interrupcao e onde terminar a sequencia
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 3, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 4, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 5, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 6, ADC_CTL_TS);
+    ADCSequenceStepConfigure(ADC0_BASE,0,7,ADC_CTL_TS|ADC_CTL_IE|ADC_CTL_END);// adicionamos interrupcao e onde terminar a sequencia
 
 
     // Passo 6
     // ( modulo | seq )
-    ADCSequenceEnable(ADC0_BASE, 1);
+    ADCSequenceEnable(ADC0_BASE, 0);
 }
 
 // this is the interrupt routine for the ADC
 void ADC0handler(void)
 {
     // clear the interrupt flag, grab the data, set the 'done' flag
-    ADCIntClear(ADC0_BASE, 1);
+    ADCIntClear(ADC0_BASE, 0);
+
+    ADCProcessorTrigger(ADC0_BASE, 0);
+
     // Passo 10
    // ( modulo | seq | Endereco de onde armazenar)
-   ADCSequenceDataGet(ADC0_BASE, 1, ui32ADC0Value);
+   ADCSequenceDataGet(ADC0_BASE, 0, ui32ADC0Value);
 
-    newtemp = 1;
+   LedVerde();
+
+
+}
+
+void Systickhandler(void)
+{
+
+}
+
+void pinos_Led_RGB(void)
+{
+    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1);
+}
+
+void LedVermelho(void)
+{
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
+}
+
+void LedVerde(void)
+{
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_PIN_3);
+}
+
+void LedAzul(void)
+{
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
 }
 /*
 void InitConsole(void)
@@ -281,28 +319,35 @@ int main(void)
         //Pinos do display
         pinos_display();
 
+        //Pino led RGB
+        pinos_Led_RGB();
+
+        // Configuracao do ADC sensor de temperatura
         ADC_config();
-        //InitConsole();
+
+        LedAzul();
+
+
 
         // make sure interrupt flag is clear
+        IntMasterEnable();
         // enable the interrupt for the module and for the sequence
-        ADCIntClear(ADC0_BASE, 1);
         IntEnable(INT_ADC0SS0);
-        ADCIntEnable(ADC0_BASE, 1);
+        ADCIntEnable(ADC0_BASE, 0);
 
         // allow interrupts
-        IntMasterEnable();
+
+        //SysTickPeriodSet(50000);
     while(1)
     {
         // Passo 7
         // ( modulo | seq )
-        ADCIntClear(ADC0_BASE, 1);
+        //ADCIntClear(ADC0_BASE, 0);
 
         newtemp = 0;
 
         // Passo 8
         // ( modulo | seq )
-        ADCProcessorTrigger(ADC0_BASE, 1);
 
         // spin and wait for the interrupt handler to get the data
         //while ( newtemp == 0 ) {
@@ -312,23 +357,21 @@ int main(void)
         // Passo 9
         // ( modulo | seq | bMasked)
         // se bMasked tivesse true ela poderia chamar uma interrupcao, nao iria precisar do pooling
-        while(!ADCIntStatus(ADC0_BASE, 1, true)){}
+        //while(!ADCIntStatus(ADC0_BASE, 0, true)){}
 
 
-
-
-
-        // Passo 11
-        ui32TempAvg = (ui32ADC0Value[0] + ui32ADC0Value[1] + ui32ADC0Value[2] + ui32ADC0Value[3] + 2)/4;
-
-        // Passo 12
-        ui32TempValueC = (1475 - ((2475 * ui32TempAvg)) / 4096)/10;
-        ui32TempValueF = ((ui32TempValueC * 9) + 160) / 5;
 
         //Tarefa 1 lab6
         temperatura_calc(ui32TempValueC);
         escreve_temperatura(n4, n3, n2, n1);
 
-        //UARTprintf("Teste\n");
+        // Passo 11
+       ui32TempAvg = (ui32ADC0Value[0] + ui32ADC0Value[1] + ui32ADC0Value[2] + ui32ADC0Value[3]+ ui32ADC0Value[4] + ui32ADC0Value[5] + ui32ADC0Value[6] + ui32ADC0Value[7] + 4)/8;
+
+       // Passo 12
+       ui32TempValueC = (1475 - ((2475 * ui32TempAvg)) / 4096)/10;
+       ui32TempValueF = ((ui32TempValueC * 9) + 160) / 5;
+
+        SysCtlDelay(200);
     }
 }
