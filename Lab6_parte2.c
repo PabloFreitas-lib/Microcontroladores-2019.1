@@ -15,6 +15,7 @@
 #include "driverlib/uart.h"
 #include "driverlib/systick.h"
 #include "utils/uartstdio.h"
+#include "driverlib/timer.h"
 
 #define ESC_REG(x)                  (*((volatile uint32_t *)(x)))
 
@@ -64,10 +65,44 @@ volatile uint32_t ui32TempValueC;
 volatile uint32_t ui32TempValueF;
 int i;
 
+// ****** Constants ******
+const int sampleFreq = 8000; // Sample Frequency
+
+// ****** Variables ******
+uint16_t samplePeriod;
+
+int ctd=0;
+
 // **** FIM Var Globais ***********************
 
 
 //----------------------------------------------FUNCOES GERAIS-------------------------------------------------------------------
+
+
+
+void pinos_Led_RGB(void)
+{
+    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1);
+}
+
+void LedVermelho(void)
+{
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
+}
+
+void LedVerde(void)
+{
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_PIN_3);
+}
+
+void LedAzul(void)
+{
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
+    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
+}
+
 
 void delay_system(float mS)
 {
@@ -246,63 +281,49 @@ void ADC_config(void)
 // this is the interrupt routine for the ADC
 void ADC0handler(void)
 {
+    SysTickDisable();
+    SysTickIntDisable();
+
     // clear the interrupt flag, grab the data, set the 'done' flag
     ADCIntClear(ADC0_BASE, 0);
-
-    ADCProcessorTrigger(ADC0_BASE, 0);
-
     // Passo 10
    // ( modulo | seq | Endereco de onde armazenar)
    ADCSequenceDataGet(ADC0_BASE, 0, ui32ADC0Value);
-
    LedVerde();
 
 
+   SysCtlDelay(20000);
+   SysTickEnable();
+   SysTickIntEnable();
 }
 
 void Systickhandler(void)
 {
-
+    ADCIntDisable(ADC0_BASE, 0);
+    LedVermelho();
+   if(++ctd == 10)
+   {
+    ctd=0;
+    IntEnable(INT_ADC0SS0);
+    ADCIntEnable(ADC0_BASE, 0);
+   }
 }
 
-void pinos_Led_RGB(void)
+// Interrupts
+void Timer0IntHandler(void)
 {
-    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1);
+    TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+    LedVerde();
 }
 
-void LedVermelho(void)
+void config_Timer(void)
 {
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, GPIO_PIN_1);
+    TimerConfigure(TIMER0_BASE,TIMER_CFG_PERIODIC);
+    TimerLoadSet(TIMER0_BASE,TIMER_A,10);
+    TimerControlTrigger(TIMER0_BASE,TIMER_A,true);
 }
 
-void LedVerde(void)
-{
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, GPIO_PIN_3);
-}
 
-void LedAzul(void)
-{
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0x00);
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
-}
-/*
-void InitConsole(void)
-{
-    // enable the port that has UART0 pins
-    // configure the RX/TX port pins
-    // enable the uart, set the clock, set the pins
-    // set baud-rate
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    SysCtlDelay(2);
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    UARTStdioConfig(0, 115200, SysCtlClockGet());
-}*/
 
 int main(void)
 {
@@ -313,8 +334,10 @@ int main(void)
         SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
         SysCtlDelay(2);
 
+
         //habilita_clockGPIO(portalGPIO_e|portalGPIO_c|portalGPIO_d | portalGPIO_b| portalGPIO_f);
         clock_display();
+        IntMasterEnable();
 
         //Pinos do display
         pinos_display();
@@ -325,52 +348,26 @@ int main(void)
         // Configuracao do ADC sensor de temperatura
         ADC_config();
 
+        SysTickPeriodSet(160000000);
+
         LedAzul();
 
+        SysTickEnable();
+        SysTickIntEnable();
 
-
-        // make sure interrupt flag is clear
-        IntMasterEnable();
-        // enable the interrupt for the module and for the sequence
-        IntEnable(INT_ADC0SS0);
-        ADCIntEnable(ADC0_BASE, 0);
-
-        // allow interrupts
-
-        //SysTickPeriodSet(50000);
     while(1)
     {
-        // Passo 7
-        // ( modulo | seq )
-        //ADCIntClear(ADC0_BASE, 0);
+        ADCProcessorTrigger(ADC0_BASE, 0);
+        // Passo 11
+        ui32TempAvg = (ui32ADC0Value[0] + ui32ADC0Value[1] + ui32ADC0Value[2] + ui32ADC0Value[3]+ ui32ADC0Value[4] + ui32ADC0Value[5] + ui32ADC0Value[6] + ui32ADC0Value[7] + 4)/8;
 
-        newtemp = 0;
-
-        // Passo 8
-        // ( modulo | seq )
-
-        // spin and wait for the interrupt handler to get the data
-        //while ( newtemp == 0 ) {
-            //__asm ("WFE\n   ");
-        //}
-
-        // Passo 9
-        // ( modulo | seq | bMasked)
-        // se bMasked tivesse true ela poderia chamar uma interrupcao, nao iria precisar do pooling
-        //while(!ADCIntStatus(ADC0_BASE, 0, true)){}
-
-
+        // Passo 12
+        ui32TempValueC = (1475 - ((2475 * ui32TempAvg)) / 4096)/10;
+        ui32TempValueF = ((ui32TempValueC * 9) + 160) / 5;
 
         //Tarefa 1 lab6
         temperatura_calc(ui32TempValueC);
         escreve_temperatura(n4, n3, n2, n1);
-
-        // Passo 11
-       ui32TempAvg = (ui32ADC0Value[0] + ui32ADC0Value[1] + ui32ADC0Value[2] + ui32ADC0Value[3]+ ui32ADC0Value[4] + ui32ADC0Value[5] + ui32ADC0Value[6] + ui32ADC0Value[7] + 4)/8;
-
-       // Passo 12
-       ui32TempValueC = (1475 - ((2475 * ui32TempAvg)) / 4096)/10;
-       ui32TempValueF = ((ui32TempValueC * 9) + 160) / 5;
 
         SysCtlDelay(200);
     }
