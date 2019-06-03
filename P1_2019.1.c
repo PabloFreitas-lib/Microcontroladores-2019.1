@@ -5,6 +5,24 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
 
+#include "utils/ustdlib.h"
+#include "inc/hw_memmap.h"
+#include "inc/hw_types.h"
+
+#include "driverlib/debug.h"
+#include "driverlib/hibernate.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/eeprom.h"
+#include "driverlib/adc.h"
+#include "driverlib/gpio.h"
+#include "driverlib/interrupt.h"
+#include "driverlib/rom.h"
+#include "driverlib/uart.h"
+#include "driverlib/systick.h"
+#include "utils/uartstdio.h"
+#include "driverlib/timer.h"
+
 //definicoes para o ifdef
 
 //#define anodo //Placa Preta ou display 7segmentos branco
@@ -465,12 +483,6 @@ void trataIntGPIOF(void)
 
 void trataSystick(void)
 {
-    if(ctd>=4)
-    {
-
-    }
-    else
-    {
        c++;
        if(c==4)
        {
@@ -478,7 +490,6 @@ void trataSystick(void)
        }
        GPIOPinWrite(portalF_base, pino4, vector_matrix[c]);
        GPIOPinWrite(portalB_base, pino0|pino1|pino5, vector_matrix[c]);
-    }
 }
 
 
@@ -520,7 +531,7 @@ int main(void)
 
     IntMasterEnable();
 
-    habilitaInterrupcao(int_port_F);
+    IntEnable(INT_GPIOF);
     GPIOIntTypeSet(portalF_base, GPIO_INT_PIN_0|GPIO_INT_PIN_1|GPIO_INT_PIN_2|GPIO_INT_PIN_3, GPIO_FALLING_EDGE);
     GPIOIntEnable(portalF_base, GPIO_INT_PIN_0|GPIO_INT_PIN_1|GPIO_INT_PIN_2|GPIO_INT_PIN_3);
 
