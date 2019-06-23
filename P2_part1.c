@@ -1,10 +1,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
+#include <string.h>
 
 #include "utils/ustdlib.h"
+#include "utils/uartstdio.h"
+
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
+#include "inc/tm4c123gh6pm.h"
 
 #include "driverlib/debug.h"
 #include "driverlib/hibernate.h"
@@ -17,23 +21,16 @@
 #include "driverlib/rom.h"
 #include "driverlib/uart.h"
 #include "driverlib/systick.h"
-#include "utils/uartstdio.h"
 #include "driverlib/timer.h"
-#include "inc/tm4c123gh6pm.h"
 #include "driverlib/ssi.h"
-
-#include <string.h>
 
 //#define rampa
 //#define seno
 //#define quadrada
 //#define triangular
+
 /*
  * Usamos o PA2 e PA5
- */
-
-/**
- * main.c
  */
 
 #ifndef M_PI
@@ -41,92 +38,183 @@
 #endif
 
 int32_t contador;
-int UP=0,cont=0,freq=0,amplitude;
-
+int UP=0,posicao_uart=0,f_wave=0,amplitude;
 float i=0.0;
-float seno_t=0.0;
+float seno_aux=0.0;
 float fRadians = (M_PI/180);
+unsigned char back= ' ',type= ' ';
+int erro = 13;
 
-int ordem =0;
-unsigned char anterior= ' ',tipo= ' ';
+/*
+ * Funcoes desenvolvidas depois da main
+ */
+void check_first(unsigned char data_t);
+void check_numbers(unsigned char data_t);
+void Handler_UART0(void);
+void SystickHandler(void);
 
-volatile uint8_t command;
-
-//int UP1=0;
-//int UP2=0;
 
 
-
-void Handler_UART0(void)
+/*
+ * =======================COMECO DA MAIN ================================================================
+ */
+int main(void)
 {
-    // formato,frequencia,amplitude
-    //Ex: s,16000,1600
-     unsigned char dado = UARTCharGet(UART0_BASE);
-     if(anterior == ' ')
+        // Passo 2
+        SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ); // 80 MHz
+
+        // Passo 3
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+
+        // Passo 4
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+
+        // Passo 5
+        GPIOPinConfigure(GPIO_PA2_SSI0CLK);
+        GPIOPinConfigure(GPIO_PA5_SSI0TX);
+        GPIOPinConfigure(GPIO_PA0_U0RX);
+        GPIOPinConfigure(GPIO_PA1_U0TX);
+
+        // Passo 6
+        GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4);
+
+        // Passo 7
+        GPIOPadConfigSet(GPIO_PORTA_BASE,GPIO_PIN_2 | GPIO_PIN_5, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD);
+        GPIOPadConfigSet(GPIO_PORTB_BASE,GPIO_PIN_4, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD);
+        GPIOPadConfigSet(GPIO_PORTA_BASE, GPIO_PIN_0|GPIO_PIN_1, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD);
+
+        // Passo 8
+        GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_5);
+        GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0|GPIO_PIN_1);
+
+        // Passo 9
+        SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_2, SSI_MODE_MASTER, 2500000, 16);
+        UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200, (UART_CONFIG_WLEN_8|UART_CONFIG_STOP_ONE|UART_CONFIG_PAR_NONE));
+
+        // Passo 9
+        SSIEnable(SSI0_BASE);
+        UARTEnable(UART0_BASE);
+
+        UARTIntEnable(UART0_BASE, UART_INT_RX|UART_INT_RT);
+        IntEnable(INT_UART0);
+        IntMasterEnable();
+
+        UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX4_8);
+        UARTFIFOEnable(UART0_BASE);
+
+        SysTickEnable ();
+        SysTickIntEnable();
+        SysTickPeriodSet(f_wave);
+    while(1){}
+}
+/*
+ * =======================FIM DA MAIN ================================================================
+ */
+
+/*
+ *
+ * ==================================FUNCOES AUXILIARES =================================================
+ */
+/*
+ * Verificacao do tipo de onde
+ * s --> seno
+ * t --> triangular
+ * r --> rampa
+ * q -->quadrada
+ */
+void check_first(unsigned char data_t)
+{
+    if(back == ' ')
      {
-         if(dado == 'r')
+         if(data_t == 'r')
          {
-             tipo = 'r';
+             type = 'r';
          }
-         else if(dado == 'q')
+         else if(data_t == 'q')
          {
-             tipo = 'q';
+             type = 'q';
          }
-         else if(dado == 's')
+         else if(data_t == 's')
          {
-             tipo = 's';
+             type = 's';
          }
-         else if(dado == 't')
+         else if(data_t == 't')
          {
-             tipo = 't';
+             type = 't';
          }
-         else if(dado == ',')
+         else if(data_t == ',')
          {
-             anterior = ',';
+             back = ',';
          }
      }
+}
 
-     if(anterior == ',' && cont <= 1)
+/*
+ * Verifica a frequencia e a amplitude, respectivamente nessa ordem.
+ * Frequencia vai direto para o valor do systick e amplitude define o valor maximo que a onda pode chegar em seu respectivo formato
+ */
+void check_numbers(unsigned char data_t)
+{
+    if(back == ',' && posicao_uart <= 1)
      {
-         if(dado == ',')
+         if(data_t == ',')
          {
-             cont++;
+             posicao_uart++;
          }
          else
          {
-             freq *= 10;
-             freq = freq+(dado-48);
+             f_wave *= 10;
+             f_wave += (data_t-48);
          }
      }
-     else if(anterior == ',' && cont > 1 && dado != 13)
+     else if( (data_t != erro) &&  (back == ',') && (posicao_uart > 1) )
      {
          amplitude *= 10;
-         amplitude = amplitude+(dado-48);
+         amplitude +=(data_t-48);
      }
+}
+/* ==================================FUNCOES AUXILIARES *FIM* =================================================*/
 
+/* ==================================== UART ---- SYSTICK ======================================================*/
+/*
+ * Recebimento das informacoes via UART
+ */
+void UART0Handler(void)
+{
+    UARTIntClear(UART0_BASE, UART_INT_RX|UART_INT_RT);
+    // formato,frequencia,amplitude
+    //Ex: s,16000,1600
 
-     UARTCharPut(UART0_BASE, dado);
-     UARTIntClear(UART0_BASE, UART_INT_RX|UART_INT_RT);
+     unsigned char data = UARTCharGet(UART0_BASE);
+     check_first(data);
+     check_numbers(data);
+
+     UARTCharPut(UART0_BASE, data);
 
      SysTickEnable ();
      SysTickIntEnable();
-     SysTickPeriodSet (freq);//40000
+     SysTickPeriodSet (f_wave);
 
  }
 
+/*
+ * Base para a periodicidade da onda
+ */
 
 void SystickHandler(void)
 {
 
     //#ifdef rampa
-    if(tipo == 'r')
+    if(type == 'r')
     {
         contador+=450;
     }
     //#endif
 
     //#ifdef quadrada
-    else if(tipo == 'q')
+    else if(type == 'q')
     {
         if(UP)
         {
@@ -143,8 +231,20 @@ void SystickHandler(void)
     //#endif
 
     //#ifdef seno
-    else if(tipo == 's')
+    else if(type == 's')
     {
+
+        if(i<M_PI)
+                {
+                    seno_aux = 1 + sin(i);
+                    i+= 0.01;
+                }
+                else if(i>M_PI)
+                {
+                    i = -M_PI;
+                }
+                contador = seno_aux*(amplitude/2);
+
        /* contador = (1 + sinf(fRadians * i))*(amplitude);
         if(!UP1)
         {
@@ -162,21 +262,12 @@ void SystickHandler(void)
                 UP1=0;
             }
         }*/
-        if(i<M_PI)
-        {
-            seno_t = 1 + sin(i);
-            i+=0.01;
-        }
-        else
-        {
-            i=-M_PI;
-        }
-        contador = seno_t*(amplitude/2);
+
     }
     //#endif
 
 //#ifdef triangular
-    else if(tipo == 't')
+    else if(type == 't')
     {
         if(!UP)
         {
@@ -197,77 +288,14 @@ void SystickHandler(void)
     }
 
 //#endif
+/*
+ * Parte feita ainda para o SSI
+ */
     GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_4, 0x00);
-    SSIDataPut(SSI0_BASE, (0x3FFF & contador)); // valor do contador mascarado
+    SSIDataPut(SSI0_BASE, (0x3FFF & contador));
+
     while(SSIBusy(SSI0_BASE)){}
+
     GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_4, 0xFF);
 }
 
-
-
-
-int main(void)
-{
-    // Passo 2
-        SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_OSC_MAIN|SYSCTL_XTAL_16MHZ); // 80 MHz
-        // Passo 3
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0); //A2 e A7
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-        // Passo 4
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); //TX e SCLK
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB); //SYNC
-        // Passo 5
-        GPIOPinConfigure(GPIO_PA2_SSI0CLK);
-        GPIOPinConfigure(GPIO_PA5_SSI0TX);
-        GPIOPinConfigure(GPIO_PA0_U0RX);
-        GPIOPinConfigure(GPIO_PA1_U0TX);
-        // Passo 6
-        GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4);
-        // Passo 7
-        GPIOPadConfigSet(GPIO_PORTA_BASE,GPIO_PIN_2 | GPIO_PIN_5, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD);
-        GPIOPadConfigSet(GPIO_PORTB_BASE,GPIO_PIN_4, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD);
-        GPIOPadConfigSet(GPIO_PORTA_BASE, GPIO_PIN_0|GPIO_PIN_1, GPIO_STRENGTH_2MA, GPIO_PIN_TYPE_STD);
-        // Passo 8
-        GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_5);
-        GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0|GPIO_PIN_1);
-        // Passo 9
-        //while(!SysCtlPeripheralReady(SYSCTL_PERIPH_SSI0)){}
-        SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_2, SSI_MODE_MASTER, 2500000, 16);
-        UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200, (UART_CONFIG_WLEN_8|UART_CONFIG_STOP_ONE|UART_CONFIG_PAR_NONE));
-
-        // Passo 9
-        SSIEnable(SSI0_BASE);
-        UARTEnable(UART0_BASE);
-
-
-        UARTIntEnable(UART0_BASE, UART_INT_RX|UART_INT_RT);
-        IntEnable(INT_UART0);
-        IntMasterEnable();
-
-        UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX4_8);//rx 4 -> 4 bytes de dados
-        UARTFIFOEnable(UART0_BASE);
-
-        SysTickEnable ();
-        SysTickIntEnable();
-        SysTickPeriodSet (freq);//40000
-    while(1){}
-}
-
-/*
- * DAC8311 -- SSI
- * PB4 -> Sync/CS
- * PA2 --> SCLK
- * PA7 --> DIN
- *
- * Coa max 20MHz
- *
- * Taxa de conversão 12uS -> 83kSa/s
- *
- * Vout = AVdd * Valor_Digital/2^(n_bits)
- * nese caso Valor digital [0,2~14 -1]  e 14 bits
- *
- * SSI Modo 2
- * 16 bits
- *
- * Dado atualizado boarda subida default clock nivel '1'
- */
