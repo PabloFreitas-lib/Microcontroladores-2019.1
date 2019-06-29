@@ -50,12 +50,21 @@ int top    = 38;
  * Altura de cada torre [23-43] pixels
  *
  *          ________________________
- *          ||                      ||
- *          ||     |    |     |     ||
+ *          ||                      || top2
+ *          ||     |    |     |     || top1
  *--> 38-39 ||     |    |     |     || top
  *--> 40-41 ||     |    |     |     || middle
  *--> 42-43 ||_____|____|_____|_____|| bottle
  *           <-21-><-21-><-21-><-21->   21*4 = 84
+ * 
+ *    |[SW1][SW2][SW3][SW4]|
+ *    |[SW5][SW6][SW7][SW8]|
+ *    |____________________|
+ *     SW1 e SW3 ==> Mover para esquerda/direita o curso (podendo ser a setinha ou a barra) no jogo
+ *     SW2 ==> Pegar/Soltar na torre indicada pelo curso 
+ *     SW4 e SW8 ==> Pula as regras e finaliza as regras, respectivamente 
+ *     SW5 e SW7 ==> Diminui e aumenta o numero de Discos, respectivamente
+ *     SW6 ==> Confima o nivel desejado
  *
  *    |    1   0   0   |
  *    |    2   0   0   |
